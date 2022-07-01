@@ -80,7 +80,7 @@ public class ReflectionUtils {
                 clazz.getName().startsWith("javax.") ||
                 clazz.getName().startsWith("com.sun") ||
                 clazz.getName().startsWith("com.oracle") ||
-                clazz.getName().startsWith("org.apache.*")
+                clazz.getName().startsWith("org.apache.")
         );
     }
 
