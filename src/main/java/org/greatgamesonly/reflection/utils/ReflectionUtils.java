@@ -13,15 +13,15 @@ import java.util.stream.Collectors;
 
 public class ReflectionUtils {
 
-    private static Field[] getClassFields(Class<?> clazz) {
+    public static Field[] getClassFields(Class<?> clazz) {
         return getClassFields(clazz, false, new ArrayList<>());
     }
 
-    private static Field[] getClassFields(Class<?> clazz, boolean excludeDeclaredCustomClassFields) {
+    public static Field[] getClassFields(Class<?> clazz, boolean excludeDeclaredCustomClassFields) {
         return getClassFields(clazz, excludeDeclaredCustomClassFields, new ArrayList<>());
     }
 
-    private static Field[] getClassFields(Class<?> clazz, boolean excludeDeclaredCustomClassFields, List<Annotation> bypassWithTheseAnnotations) {
+    public static Field[] getClassFields(Class<?> clazz, boolean excludeDeclaredCustomClassFields, List<Annotation> bypassWithTheseAnnotations) {
         return Arrays.stream(clazz.getDeclaredFields())
                 .filter(field -> (
                         (!excludeDeclaredCustomClassFields && !checkIfClassIsFromMainJavaPackages(field.getType())) ||
@@ -37,7 +37,7 @@ public class ReflectionUtils {
                 ).toArray(Field[]::new);
     }
 
-    private static Set<String> getGetters(Class<?> clazz) throws IntrospectionException {
+    public static Set<String> getGetters(Class<?> clazz) throws IntrospectionException {
         return Arrays.stream(Introspector.getBeanInfo(clazz).getPropertyDescriptors())
                 .filter(propertyDescriptor -> propertyDescriptor.getPropertyType().equals(String.class) ||
                         propertyDescriptor.getPropertyType().equals(Long.class) ||
@@ -53,18 +53,18 @@ public class ReflectionUtils {
                 .collect(Collectors.toSet());
     }
 
-    private static Set<String> getSetters(Class<?> clazz) throws IntrospectionException {
+    public static Set<String> getSetters(Class<?> clazz) throws IntrospectionException {
         return Arrays.stream(Introspector.getBeanInfo(clazz).getPropertyDescriptors())
                 .filter(propertyDescriptor -> propertyDescriptor .getWriteMethod() != null)
                 .map(propertyDescriptor -> propertyDescriptor.getWriteMethod().getName())
                 .collect(Collectors.toSet());
     }
 
-    private static String capitalizeString(String str) {
+    public static String capitalizeString(String str) {
         return (str != null && str.length() > 0) ? str.substring(0, 1).toUpperCase() + str.substring(1) : str;
     }
 
-    private static <T> T[] concatenate(T[] a, T[] b) {
+    public static <T> T[] concatenate(T[] a, T[] b) {
         int aLen = a.length;
         int bLen = b.length;
         @SuppressWarnings("unchecked")
@@ -74,7 +74,7 @@ public class ReflectionUtils {
         return c;
     }
 
-    private static boolean checkIfClassIsFromMainJavaPackages(Class<?> clazz) {
+    public static boolean checkIfClassIsFromMainJavaPackages(Class<?> clazz) {
         return (clazz.getName().startsWith("java.lang") ||
                 clazz.getName().startsWith("java.") ||
                 clazz.getName().startsWith("javax.") ||
@@ -85,7 +85,7 @@ public class ReflectionUtils {
     }
 
     // I WOULD SAY WITH THE LATER VERSIONS OF JAVA, JAVA Reflection logic should run fast enoug (if kept simple)
-    protected static Object callReflectionMethod(Object object, String methodName, Object... methodParams) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+    public static Object callReflectionMethod(Object object, String methodName, Object... methodParams) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         Object methodResult = null;
         if(methodParams == null || methodParams.length == 0) {
             methodResult = object.getClass().getMethod(methodName).invoke(object);
