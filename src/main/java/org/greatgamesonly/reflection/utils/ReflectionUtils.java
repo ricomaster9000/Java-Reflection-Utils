@@ -21,7 +21,7 @@ public class ReflectionUtils {
         return getClassFields(clazz, excludeDeclaredCustomClassFields, new ArrayList<>());
     }
 
-    public static Field[] getClassFields(Class<?> clazz, boolean excludeDeclaredCustomClassFields, List<Annotation> bypassWithTheseAnnotations) {
+    public static Field[] getClassFields(Class<?> clazz, boolean excludeDeclaredCustomClassFields, List<Class<? extends Annotation>> bypassWithTheseAnnotations) {
         return Arrays.stream(clazz.getDeclaredFields())
                 .filter(field -> (
                         (!excludeDeclaredCustomClassFields && !checkIfClassIsFromMainJavaPackages(field.getType())) ||
