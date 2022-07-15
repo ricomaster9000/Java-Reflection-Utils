@@ -84,7 +84,7 @@ public class ReflectionUtils {
         );
     }
 
-    // I WOULD SAY WITH THE LATER VERSIONS OF JAVA, JAVA Reflection logic should run fast enoug (if kept simple)
+    // I WOULD SAY WITH THE LATER VERSIONS OF JAVA, JAVA Reflection logic should run fast enough (if kept simple)
     public static Object callReflectionMethod(Object object, String methodName, Object... methodParams) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         Object methodResult = null;
         if(methodParams == null || methodParams.length == 0) {
@@ -93,6 +93,16 @@ public class ReflectionUtils {
             methodResult = object.getClass().getMethod(methodName).invoke(object, methodParams);
         }
         return methodResult;
+    }
+
+    public static <T> T callReflectionMethodGeneric(Object object, String methodName, Object... methodParams) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+        Object methodResult = null;
+        if (methodParams != null && methodParams.length != 0) {
+            methodResult = object.getClass().getMethod(methodName).invoke(object, methodParams);
+        } else {
+            methodResult = object.getClass().getMethod(methodName).invoke(object);
+        }
+        return (T) methodResult;
     }
 
 }
