@@ -1,4 +1,4 @@
-package org.greatgamesonly.reflection.utils.CVII;
+package org.greatgamesonly.reflection.utils;
 
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -116,7 +116,6 @@ public class ReflectionUtils {
     public static <T> T callReflectionMethodGeneric(Object object, String methodName) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         return callReflectionMethodGeneric(object, methodName, null, null);
     }
-
 
     public static <T> T callReflectionMethodGeneric(Object object, String methodName, Object[] methodParams, Class<?>[] methodParamTypes) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         Object methodResult;
