@@ -140,4 +140,26 @@ public class ReflectionUtils {
         return (T) methodResult;
     }
 
+    public static Class<?> getClassByName(String fullName) {
+        Vector<Class> classes = null;
+        Field f = null;
+        try {
+            f = ClassLoader.class.getDeclaredField("classes");
+        } catch (NoSuchFieldException ignored) {}
+        if(f == null) {
+            return null;
+        }
+        f.setAccessible(true);
+
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        try {
+            classes =  (Vector<Class>) f.get(classLoader);
+        } catch (IllegalAccessException ignored) {}
+        f.setAccessible(true);
+        if(classes == null) {
+            return null;
+        }
+        return classes.stream().filter(clazz -> clazz.getName().equals(fullName)).findFirst().orElse(null);
+    }
+
 }
