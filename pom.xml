@@ -6,7 +6,7 @@
 	<groupId>org.greatgamesonly.reflection</groupId>
 	<artifactId>utils</artifactId>
 	<url>https://github.com/ricomaster9000/Java-Reflection-Utils</url>
-	<version>1.0.5</version>
+	<version>1.0.6</version>
 	<properties>
 		<compiler-plugin.version>3.8.1</compiler-plugin.version>
 		<maven.compiler.parameters>true</maven.compiler.parameters>

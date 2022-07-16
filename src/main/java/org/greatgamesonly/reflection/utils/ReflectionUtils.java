@@ -6,6 +6,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.*;
@@ -86,21 +87,45 @@ public class ReflectionUtils {
 
     // I WOULD SAY WITH THE LATER VERSIONS OF JAVA, JAVA Reflection logic should run fast enough (if kept simple)
     public static Object callReflectionMethod(Object object, String methodName, Object... methodParams) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
-        Object methodResult = null;
-        if(methodParams == null || methodParams.length == 0) {
-            methodResult = object.getClass().getMethod(methodName).invoke(object);
-        } else {
-            methodResult = object.getClass().getMethod(methodName).invoke(object, methodParams);
+        Object methodResult;
+        Method method = object.getClass().getMethod(methodName);
+        boolean hadToSetMethodToAccessible = false;
+        if(!method.canAccess(object)) {
+            method.setAccessible(true);
+            hadToSetMethodToAccessible = true;
+        }
+        try {
+            if (methodParams == null || methodParams.length == 0) {
+                methodResult = method.invoke(object);
+            } else {
+                methodResult = method.invoke(object, methodParams);
+            }
+        } finally {
+            if(hadToSetMethodToAccessible) {
+                method.setAccessible(false);
+            }
         }
         return methodResult;
     }
 
     public static <T> T callReflectionMethodGeneric(Object object, String methodName, Object... methodParams) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
-        Object methodResult = null;
-        if (methodParams != null && methodParams.length != 0) {
-            methodResult = object.getClass().getMethod(methodName).invoke(object, methodParams);
-        } else {
-            methodResult = object.getClass().getMethod(methodName).invoke(object);
+        Object methodResult;
+        Method method = object.getClass().getMethod(methodName);
+        boolean hadToSetMethodToAccessible = false;
+        if(!method.canAccess(object)) {
+            method.setAccessible(true);
+            hadToSetMethodToAccessible = true;
+        }
+        try {
+            if (methodParams != null && methodParams.length != 0) {
+                methodResult = method.invoke(object, methodParams);
+            } else {
+                methodResult = method.invoke(object);
+            }
+        } finally {
+            if(hadToSetMethodToAccessible) {
+                method.setAccessible(false);
+            }
         }
         return (T) methodResult;
     }
