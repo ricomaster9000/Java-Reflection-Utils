@@ -141,25 +141,20 @@ public class ReflectionUtils {
     }
 
     public static Class<?> getClassByName(String fullName) {
-        Vector<Class> classes = null;
-        Field f = null;
+        Class<?> result = null;
+        Method method = null;
         try {
-            f = ClassLoader.class.getDeclaredField("classes");
-        } catch (NoSuchFieldException ignored) {}
-        if(f == null) {
+            method = Thread.currentThread().getContextClassLoader().getClass().getDeclaredMethod("findClass", String.class, String.class);
+        } catch (NoSuchMethodException ignored) {
             return null;
         }
-        f.setAccessible(true);
-
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        method.setAccessible(true);
         try {
-            classes =  (Vector<Class>) f.get(classLoader);
-        } catch (IllegalAccessException ignored) {}
-        f.setAccessible(true);
-        if(classes == null) {
+            result = (Class<?>) method.invoke(Thread.currentThread().getContextClassLoader(), Thread.currentThread().getContextClassLoader().getUnnamedModule().getName(),fullName);
+        } catch (IllegalAccessException | InvocationTargetException e) {
             return null;
         }
-        return classes.stream().filter(clazz -> clazz.getName().equals(fullName)).findFirst().orElse(null);
+        return result;
     }
 
 }
