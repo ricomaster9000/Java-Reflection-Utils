@@ -1,4 +1,4 @@
-package org.greatgamesonly.reflection.utils.CVI;
+package org.greatgamesonly.reflection.utils.CVII;
 
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -85,17 +85,22 @@ public class ReflectionUtils {
         );
     }
 
+    public static Object callReflectionMethod(Object object, String methodName) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+        return callReflectionMethod(object, methodName, null, null);
+    }
+
     // I WOULD SAY WITH THE LATER VERSIONS OF JAVA, JAVA Reflection logic should run fast enough (if kept simple)
-    public static Object callReflectionMethod(Object object, String methodName, Object... methodParams) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+    public static Object callReflectionMethod(Object object, String methodName, Object[] methodParams, Class<?>[] methodParamTypes) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         Object methodResult;
-        Method method = object.getClass().getMethod(methodName);
+        boolean setParams = methodParams != null && methodParams.length != 0;
+        Method method = setParams ? object.getClass().getMethod(methodName, methodParamTypes) : object.getClass().getMethod(methodName);
         boolean hadToSetMethodToAccessible = false;
         if(!method.canAccess(object)) {
             method.setAccessible(true);
             hadToSetMethodToAccessible = true;
         }
         try {
-            if (methodParams == null || methodParams.length == 0) {
+            if (setParams) {
                 methodResult = method.invoke(object);
             } else {
                 methodResult = method.invoke(object, methodParams);
@@ -108,16 +113,22 @@ public class ReflectionUtils {
         return methodResult;
     }
 
-    public static <T> T callReflectionMethodGeneric(Object object, String methodName, Object... methodParams) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+    public static <T> T callReflectionMethodGeneric(Object object, String methodName) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+        return callReflectionMethodGeneric(object, methodName, null, null);
+    }
+
+
+    public static <T> T callReflectionMethodGeneric(Object object, String methodName, Object[] methodParams, Class<?>[] methodParamTypes) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         Object methodResult;
-        Method method = object.getClass().getMethod(methodName);
+        boolean setParams = methodParams != null && methodParams.length != 0;
+        Method method = setParams ? object.getClass().getMethod(methodName, methodParamTypes) : object.getClass().getMethod(methodName);
         boolean hadToSetMethodToAccessible = false;
         if(!method.canAccess(object)) {
             method.setAccessible(true);
             hadToSetMethodToAccessible = true;
         }
         try {
-            if (methodParams != null && methodParams.length != 0) {
+            if (setParams) {
                 methodResult = method.invoke(object, methodParams);
             } else {
                 methodResult = method.invoke(object);
