@@ -1,4 +1,4 @@
-package org.greatgamesonly.reflection.utils;
+package org.greatgamesonly.reflection.utils.CVI;
 
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
