@@ -101,9 +101,9 @@ public class ReflectionUtils {
         }
         try {
             if (setParams) {
-                methodResult = method.invoke(object);
-            } else {
                 methodResult = method.invoke(object, methodParams);
+            } else {
+                methodResult = method.invoke(object);
             }
         } finally {
             if(hadToSetMethodToAccessible) {
