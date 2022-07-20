@@ -40,15 +40,35 @@ public class ReflectionUtils {
 
     public static Set<String> getGetters(Class<?> clazz) throws IntrospectionException {
         return Arrays.stream(Introspector.getBeanInfo(clazz).getPropertyDescriptors())
-                .filter(propertyDescriptor -> propertyDescriptor.getPropertyType().equals(String.class) ||
-                        propertyDescriptor.getPropertyType().equals(Long.class) ||
-                        propertyDescriptor.getPropertyType().equals(Integer.class) ||
-                        propertyDescriptor.getPropertyType().equals(java.sql.Date.class) ||
-                        propertyDescriptor.getPropertyType().equals(Date.class) ||
-                        propertyDescriptor.getPropertyType().equals(Boolean.class) ||
-                        propertyDescriptor.getPropertyType().isPrimitive() ||
-                        propertyDescriptor.getPropertyType().equals(Timestamp.class) ||
-                        propertyDescriptor.getPropertyType().isEnum()
+                .filter(propertyDescriptor -> propertyDescriptor.getReadMethod() != null)
+                .map(propertyDescriptor -> propertyDescriptor.getReadMethod().getName())
+                .collect(Collectors.toSet());
+    }
+
+    public static Set<String> getGetters(Class<?> clazz, List<Class<?>> onlyForTheseValueTypes, boolean includePrimitives, boolean includeEnums) throws IntrospectionException {
+        List<Class<?>> finalOnlyForTheseValueTypes = (onlyForTheseValueTypes == null) ? new ArrayList<>() : onlyForTheseValueTypes;
+        if(includeEnums) {
+            finalOnlyForTheseValueTypes.add(Enum.class);
+        }
+        return (includePrimitives) ? Arrays.stream(Introspector.getBeanInfo(clazz).getPropertyDescriptors())
+                .filter(
+                    propertyDescriptor -> propertyDescriptor.getReadMethod() != null &&
+                    (
+                            finalOnlyForTheseValueTypes.contains(propertyDescriptor.getPropertyType()) ||
+                            propertyDescriptor.getPropertyType().isPrimitive() ||
+                            (propertyDescriptor.getPropertyType().isEnum() && finalOnlyForTheseValueTypes.contains(Enum.class))
+                    )
+                )
+                .map(propertyDescriptor -> propertyDescriptor.getReadMethod().getName())
+                .collect(Collectors.toSet())
+                :
+                Arrays.stream(Introspector.getBeanInfo(clazz).getPropertyDescriptors())
+                .filter(
+                    propertyDescriptor -> propertyDescriptor.getReadMethod() != null &&
+                    (
+                        finalOnlyForTheseValueTypes.contains(propertyDescriptor.getPropertyType()) ||
+                        (propertyDescriptor.getPropertyType().isEnum() && finalOnlyForTheseValueTypes.contains(Enum.class))
+                    )
                 )
                 .map(propertyDescriptor -> propertyDescriptor.getReadMethod().getName())
                 .collect(Collectors.toSet());
@@ -59,6 +79,42 @@ public class ReflectionUtils {
                 .filter(propertyDescriptor -> propertyDescriptor .getWriteMethod() != null)
                 .map(propertyDescriptor -> propertyDescriptor.getWriteMethod().getName())
                 .collect(Collectors.toSet());
+    }
+
+    public static Set<String> getSetters(Class<?> clazz, List<Class<?>> onlyForTheseValueTypes) throws IntrospectionException {
+        List<Class<?>> finalOnlyForTheseValueTypes = (onlyForTheseValueTypes == null) ? new ArrayList<>() : onlyForTheseValueTypes;;
+        return Arrays.stream(Introspector.getBeanInfo(clazz).getPropertyDescriptors())
+                .filter(propertyDescriptor -> propertyDescriptor.getWriteMethod() != null && finalOnlyForTheseValueTypes.contains(propertyDescriptor.getPropertyType()))
+                .map(propertyDescriptor -> propertyDescriptor.getWriteMethod().getName())
+                .collect(Collectors.toSet());
+    }
+
+    public static Set<String> getSetters(Class<?> clazz, List<Class<?>> onlyForTheseValueTypes, boolean includePrimitives, boolean includeEnums) throws IntrospectionException {
+        List<Class<?>> finalOnlyForTheseValueTypes = (onlyForTheseValueTypes == null) ? new ArrayList<>() : onlyForTheseValueTypes;
+        if(includeEnums) {
+            finalOnlyForTheseValueTypes.add(Enum.class);
+        }
+        return (includePrimitives) ?
+            Arrays.stream(Introspector.getBeanInfo(clazz).getPropertyDescriptors())
+            .filter(
+                propertyDescriptor -> propertyDescriptor.getWriteMethod() != null &&
+                (
+                    finalOnlyForTheseValueTypes.contains(propertyDescriptor.getPropertyType()) ||
+                    propertyDescriptor.getPropertyType().isPrimitive() ||
+                    (propertyDescriptor.getPropertyType().isEnum() && finalOnlyForTheseValueTypes.contains(Enum.class))
+                )
+            )
+            .map(propertyDescriptor -> propertyDescriptor.getWriteMethod().getName()).collect(Collectors.toSet())
+            :
+            Arrays.stream(Introspector.getBeanInfo(clazz).getPropertyDescriptors())
+            .filter(
+                propertyDescriptor -> propertyDescriptor.getWriteMethod() != null &&
+                (
+                    finalOnlyForTheseValueTypes.contains(propertyDescriptor.getPropertyType()) ||
+                    (propertyDescriptor.getPropertyType().isEnum() && finalOnlyForTheseValueTypes.contains(Enum.class))
+                )
+            )
+            .map(propertyDescriptor -> propertyDescriptor.getWriteMethod().getName()).collect(Collectors.toSet());
     }
 
     public static String capitalizeString(String str) {
