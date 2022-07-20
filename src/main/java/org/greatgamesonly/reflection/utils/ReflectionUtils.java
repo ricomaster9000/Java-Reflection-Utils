@@ -7,12 +7,30 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.sql.Date;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class ReflectionUtils {
+
+    public static final List<Class<?>> BASE_VALUE_TYPES = List.of(
+            String.class,
+            Long.class,
+            Integer.class,
+            java.sql.Date.class,
+            java.util.Date.class,
+            Boolean.class,
+            Timestamp.class,
+            Double.class,
+            Float.class,
+            Short.class,
+            BigDecimal.class,
+            BigInteger.class,
+            Character.class,
+            Calendar.class
+    );
 
     public static Field[] getClassFields(Class<?> clazz) {
         return getClassFields(clazz, false, new ArrayList<>());
@@ -26,13 +44,8 @@ public class ReflectionUtils {
         return Arrays.stream(clazz.getDeclaredFields())
                 .filter(field -> (
                         (!excludeDeclaredCustomClassFields && !checkIfClassIsFromMainJavaPackages(field.getType())) ||
-                        field.getType().equals(String.class) ||
-                        field.getType().equals(Long.class) ||
-                        field.getType().equals(Integer.class) ||
-                        field.getType().equals(Date.class) ||
-                        field.getType().equals(Boolean.class) ||
+                        BASE_VALUE_TYPES.contains(field.getType()) ||
                         field.getType().isPrimitive() ||
-                        field.getType().equals(Timestamp.class) ||
                         field.getType().isEnum() ||
                         bypassWithTheseAnnotations.stream().noneMatch(bypassWithTheseAnnotation -> Arrays.asList(field.getAnnotations()).contains(bypassWithTheseAnnotation)))
                 ).toArray(Field[]::new);
@@ -43,6 +56,10 @@ public class ReflectionUtils {
                 .filter(propertyDescriptor -> propertyDescriptor.getReadMethod() != null)
                 .map(propertyDescriptor -> propertyDescriptor.getReadMethod().getName())
                 .collect(Collectors.toSet());
+    }
+
+    public static Set<String> getGettersForBaseValueTypes(Class<?> clazz, boolean includeEnums, boolean includeLists) throws IntrospectionException {
+        return getGetters(clazz, BASE_VALUE_TYPES, true, includeEnums, includeLists);
     }
 
     public static Set<String> getGetters(Class<?> clazz, List<Class<?>> onlyForTheseValueTypes, boolean includePrimitives, boolean includeEnums, boolean includeLists) throws IntrospectionException {
@@ -62,6 +79,10 @@ public class ReflectionUtils {
                 )
                 .map(propertyDescriptor -> propertyDescriptor.getReadMethod().getName())
                 .collect(Collectors.toSet());
+    }
+
+    public static Set<String> getSettersForBaseValueTypes(Class<?> clazz, boolean includeEnums, boolean includeLists) throws IntrospectionException {
+        return getSetters(clazz, BASE_VALUE_TYPES, true, includeEnums, includeLists);
     }
 
     public static Set<String> getSetters(Class<?> clazz) throws IntrospectionException {
