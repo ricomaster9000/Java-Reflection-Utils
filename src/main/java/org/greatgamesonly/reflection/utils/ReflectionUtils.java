@@ -68,10 +68,7 @@ public class ReflectionUtils {
     }
 
     public static Set<String> getGetters(Class<?> clazz, List<Class<?>> onlyForTheseValueTypes, boolean includePrimitives, boolean includeEnums, boolean includeLists) throws IntrospectionException {
-        List<Class<?>> finalOnlyForTheseValueTypes = (onlyForTheseValueTypes == null) ? new ArrayList<>() : onlyForTheseValueTypes;
-        if(includeEnums) {
-            finalOnlyForTheseValueTypes.add(Enum.class);
-        }
+        List<Class<?>> finalOnlyForTheseValueTypes = (onlyForTheseValueTypes == null) ? new ArrayList<>() : new ArrayList<>(onlyForTheseValueTypes);
         return Arrays.stream(Introspector.getBeanInfo(clazz).getPropertyDescriptors())
                 .filter(
                     propertyDescriptor -> propertyDescriptor.getReadMethod() != null &&
@@ -79,7 +76,7 @@ public class ReflectionUtils {
                         finalOnlyForTheseValueTypes.contains(propertyDescriptor.getPropertyType()) ||
                         (includePrimitives && propertyDescriptor.getPropertyType().isPrimitive()) ||
                         (includeLists && Collection.class.isAssignableFrom(propertyDescriptor.getPropertyType())) ||
-                        (propertyDescriptor.getPropertyType().isEnum() && finalOnlyForTheseValueTypes.contains(Enum.class))
+                        (includeEnums && propertyDescriptor.getPropertyType().isEnum())
                     )
                 )
                 .map(propertyDescriptor -> propertyDescriptor.getReadMethod().getName())
@@ -107,9 +104,6 @@ public class ReflectionUtils {
 
     public static Set<String> getSetters(Class<?> clazz, List<Class<?>> onlyForTheseValueTypes, boolean includePrimitives, boolean includeEnums, boolean includeLists) throws IntrospectionException {
         List<Class<?>> finalOnlyForTheseValueTypes = (onlyForTheseValueTypes == null) ? new ArrayList<>() : onlyForTheseValueTypes;
-        if(includeEnums) {
-            finalOnlyForTheseValueTypes.add(Enum.class);
-        }
         return Arrays.stream(Introspector.getBeanInfo(clazz).getPropertyDescriptors())
                 .filter(
                     propertyDescriptor -> propertyDescriptor.getWriteMethod() != null &&
@@ -117,7 +111,7 @@ public class ReflectionUtils {
                         finalOnlyForTheseValueTypes.contains(propertyDescriptor.getPropertyType()) ||
                         (includePrimitives && propertyDescriptor.getPropertyType().isPrimitive()) ||
                         (includeLists && Collection.class.isAssignableFrom(propertyDescriptor.getPropertyType())) ||
-                        (propertyDescriptor.getPropertyType().isEnum() && finalOnlyForTheseValueTypes.contains(Enum.class))
+                        (includeEnums && propertyDescriptor.getPropertyType().isEnum())
                     )
                 )
                 .map(propertyDescriptor -> propertyDescriptor.getWriteMethod().getName())
