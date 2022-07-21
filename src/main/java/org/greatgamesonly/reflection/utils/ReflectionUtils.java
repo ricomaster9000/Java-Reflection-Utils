@@ -2,6 +2,7 @@ package org.greatgamesonly.reflection.utils;
 
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
@@ -31,6 +32,8 @@ public class ReflectionUtils {
             Character.class,
             Calendar.class
     );
+
+    private static final HashMap<String, List<ReflectionSimilarClassToClassMethod>> similarClassToClassMethodGroupingByClassToClassNames = new HashMap<>();
 
     public static Field[] getClassFields(Class<?> clazz) {
         return getClassFields(clazz, false, new ArrayList<>());
@@ -170,6 +173,32 @@ public class ReflectionUtils {
         return methodResult;
     }
 
+    public static Object callReflectionMethod(Object object, Method method) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+        return callReflectionMethod(object,method,null);
+    }
+
+    public static Object callReflectionMethod(Object object, Method method, Object... methodParams) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+        Object methodResult;
+        boolean setParams = method.getParameterTypes().length > 0 && methodParams != null;
+        boolean hadToSetMethodToAccessible = false;
+        if(!method.canAccess(object)) {
+            method.setAccessible(true);
+            hadToSetMethodToAccessible = true;
+        }
+        try {
+            if (setParams) {
+                methodResult = method.invoke(object, methodParams);
+            } else {
+                methodResult = method.invoke(object);
+            }
+        } finally {
+            if(hadToSetMethodToAccessible) {
+                method.setAccessible(false);
+            }
+        }
+        return methodResult;
+    }
+
     public static <T> T callReflectionMethodGeneric(Object object, String methodName) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         return callReflectionMethodGeneric(object, methodName, null, null);
     }
@@ -212,6 +241,52 @@ public class ReflectionUtils {
             return null;
         }
         return result;
+    }
+
+    public static <T> T mergeNonBaseObjectIntoNonBaseObject(Object objectFrom, T objectTo) throws Exception {
+        String key = objectFrom.getClass().getName()+"_TO_"+objectTo.getClass().getName();
+        List<ReflectionSimilarClassToClassMethod> reflectionSimilarClassToClassMethods = similarClassToClassMethodGroupingByClassToClassNames.get(key);
+        if(reflectionSimilarClassToClassMethods == null) {
+            if(
+                (objectFrom.getClass().isPrimitive() || objectTo.getClass().isPrimitive()) ||
+                BASE_VALUE_TYPES.contains(objectFrom.getClass()) ||
+                BASE_VALUE_TYPES.contains(objectTo.getClass())
+            ) {
+                throw new Exception("objectFrom and/or objectTo invalid");
+            }
+            List<Method> allObjectFromGetters = Arrays.stream(Introspector.getBeanInfo(objectFrom.getClass()).getPropertyDescriptors())
+                    .map(PropertyDescriptor::getReadMethod)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            List<Method> allObjectToSetters = Arrays.stream(Introspector.getBeanInfo(objectTo.getClass()).getPropertyDescriptors())
+                    .map(PropertyDescriptor::getWriteMethod)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            reflectionSimilarClassToClassMethods = allObjectFromGetters.stream()
+                    .map(objectFromGetter -> {
+                        Method matchedMethodInObjectToSetters = allObjectToSetters.stream()
+                                .filter(objectToSetter -> objectToSetter.getName().equals(objectFromGetter.getName()) && Arrays.equals(objectToSetter.getParameterTypes(), objectFromGetter.getParameterTypes()))
+                                .findFirst().orElse(null);
+                        if (matchedMethodInObjectToSetters != null) {
+                            return new ReflectionSimilarClassToClassMethod(objectFromGetter, matchedMethodInObjectToSetters);
+                        } else {
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+            similarClassToClassMethodGroupingByClassToClassNames.put(key,reflectionSimilarClassToClassMethods);
+        }
+        for(ReflectionSimilarClassToClassMethod reflectionSimilarClassToClassMethod : reflectionSimilarClassToClassMethods) {
+            callReflectionMethod(
+                    objectTo,
+                    reflectionSimilarClassToClassMethod.getMethodObjectToSetter(),
+                    callReflectionMethod(objectFrom,reflectionSimilarClassToClassMethod.getMethodObjectFromGetter())
+            );
+        }
+        return objectTo;
     }
 
 }
