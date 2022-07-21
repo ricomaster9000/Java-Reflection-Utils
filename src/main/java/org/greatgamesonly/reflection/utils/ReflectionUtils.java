@@ -229,59 +229,27 @@ public class ReflectionUtils {
     public static Class<?> getClassByName(String fullName) {
         Class<?> result = null;
         Method method = null;
+        boolean methodHadToBeSetToAccessible = false;
         try {
             method = Thread.currentThread().getContextClassLoader().getClass().getDeclaredMethod("findClass", String.class, String.class);
-        } catch (NoSuchMethodException ignored) {
+            if(!method.canAccess(Thread.currentThread().getContextClassLoader())) {
+                method.setAccessible(true);
+                methodHadToBeSetToAccessible = true;
+            }
+            result = (Class<?>) method.invoke(Thread.currentThread().getContextClassLoader(), Thread.currentThread().getContextClassLoader().getUnnamedModule().getName(), fullName);
+        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             return null;
-        }
-        method.setAccessible(true);
-        try {
-            result = (Class<?>) method.invoke(Thread.currentThread().getContextClassLoader(), Thread.currentThread().getContextClassLoader().getUnnamedModule().getName(),fullName);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            return null;
+        } finally {
+            if(methodHadToBeSetToAccessible) {
+                method.setAccessible(false);
+            }
         }
         return result;
     }
 
     public static <T> T mergeNonBaseObjectIntoNonBaseObject(Object objectFrom, T objectTo) throws Exception {
-        String key = objectFrom.getClass().getName()+"_TO_"+objectTo.getClass().getName();
-        List<ReflectionSimilarClassToClassMethod> reflectionSimilarClassToClassMethods = similarClassToClassMethodGroupingByClassToClassNames.get(key);
-        if(reflectionSimilarClassToClassMethods == null) {
-            if(
-                (objectFrom.getClass().isPrimitive() || objectTo.getClass().isPrimitive()) ||
-                BASE_VALUE_TYPES.contains(objectFrom.getClass()) ||
-                BASE_VALUE_TYPES.contains(objectTo.getClass())
-            ) {
-                throw new Exception("objectFrom and/or objectTo invalid");
-            }
-            List<PropertyDescriptor> allObjectFromPropertyDescriptors = Arrays.stream(Introspector.getBeanInfo(objectFrom.getClass()).getPropertyDescriptors())
-                    .filter(propertyDescriptor -> propertyDescriptor.getWriteMethod() != null && propertyDescriptor.getReadMethod() != null)
-                    .collect(Collectors.toList());
-
-            List<PropertyDescriptor> allObjectToPropertyDescriptors = Arrays.stream(Introspector.getBeanInfo(objectTo.getClass()).getPropertyDescriptors())
-                    .filter(propertyDescriptor -> propertyDescriptor.getWriteMethod() != null && propertyDescriptor.getReadMethod() != null)
-                    .collect(Collectors.toList());
-
-            reflectionSimilarClassToClassMethods = allObjectFromPropertyDescriptors.stream()
-                    .map(objectFromPropertyDescriptor -> {
-                        Method matchedMethodInObjectToSetter = allObjectToPropertyDescriptors.stream()
-                                .filter(objectToDescriptor ->
-                                        objectToDescriptor.getWriteMethod().getName().equals(objectFromPropertyDescriptor.getWriteMethod().getName()) &&
-                                        Arrays.equals(objectFromPropertyDescriptor.getWriteMethod().getParameterTypes(), objectToDescriptor.getWriteMethod().getParameterTypes())
-                                ).map(PropertyDescriptor::getWriteMethod)
-                                .findFirst().orElse(null);
-                        if (matchedMethodInObjectToSetter != null) {
-                            return new ReflectionSimilarClassToClassMethod(objectFromPropertyDescriptor.getReadMethod(), matchedMethodInObjectToSetter);
-                        } else {
-                            return null;
-                        }
-                    })
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
-            similarClassToClassMethodGroupingByClassToClassNames.put(key,reflectionSimilarClassToClassMethods);
-        }
+        List<ReflectionSimilarClassToClassMethod> reflectionSimilarClassToClassMethods = getAllSimilarClassToClassMethodToMethodWrappers(objectFrom, objectTo);
         for(ReflectionSimilarClassToClassMethod reflectionSimilarClassToClassMethod : reflectionSimilarClassToClassMethods) {
-
             Object getterValue = callReflectionMethod(objectFrom,reflectionSimilarClassToClassMethod.getMethodObjectFromGetter());
             if(getterValue == null) {
                 continue;
@@ -292,7 +260,6 @@ public class ReflectionUtils {
                     getterValue.getClass();
 
             setterParamValueType = setterParamValueType.isArray() ? findValueTypeForNonEmptyArray(new Object[]{getterValue}) : setterParamValueType;
-
             if(setterParamValueType == null) {
                 continue;
             }
@@ -305,14 +272,62 @@ public class ReflectionUtils {
             ) {
                 getterValue = mergeNonBaseObjectIntoNonBaseObject(objectFrom, objectFrom.getClass().getDeclaredConstructor().newInstance());
             }
-
-            callReflectionMethod(
-                objectTo,
-                reflectionSimilarClassToClassMethod.getMethodObjectToSetter(),
-                getterValue
-            );
+            callReflectionMethod(objectTo, reflectionSimilarClassToClassMethod.getMethodObjectToSetter(), getterValue);
         }
         return objectTo;
+    }
+
+    public static <T> T shallowMergeNonBaseObjectIntoNonBaseObject(Object objectFrom, T objectTo) throws Exception {
+        List<ReflectionSimilarClassToClassMethod> reflectionSimilarClassToClassMethods = getAllSimilarClassToClassMethodToMethodWrappers(objectFrom, objectTo);
+        for(ReflectionSimilarClassToClassMethod reflectionSimilarClassToClassMethod : reflectionSimilarClassToClassMethods) {
+            Object getterValue = callReflectionMethod(objectFrom,reflectionSimilarClassToClassMethod.getMethodObjectFromGetter());
+            if(getterValue == null) {
+                continue;
+            }
+            callReflectionMethod(objectTo, reflectionSimilarClassToClassMethod.getMethodObjectToSetter(), getterValue);
+        }
+        return objectTo;
+    }
+
+    public static <T> List<ReflectionSimilarClassToClassMethod> getAllSimilarClassToClassMethodToMethodWrappers(Object objectFrom, T objectTo) throws Exception {
+        String key = objectFrom.getClass().getName()+"_TO_"+objectTo.getClass().getName();
+        List<ReflectionSimilarClassToClassMethod> reflectionSimilarClassToClassMethods = similarClassToClassMethodGroupingByClassToClassNames.get(key);
+        if(reflectionSimilarClassToClassMethods == null) {
+            if(
+                (objectFrom.getClass().isPrimitive() || objectTo.getClass().isPrimitive()) ||
+                BASE_VALUE_TYPES.contains(objectFrom.getClass()) ||
+                BASE_VALUE_TYPES.contains(objectTo.getClass())
+            ) {
+                throw new Exception("objectFrom and/or objectTo invalid");
+            }
+            List<PropertyDescriptor> allObjectFromPropertyDescriptors = Arrays.stream(Introspector.getBeanInfo(objectFrom.getClass()).getPropertyDescriptors())
+                .filter(propertyDescriptor -> propertyDescriptor.getWriteMethod() != null && propertyDescriptor.getReadMethod() != null)
+                .collect(Collectors.toList());
+
+            List<PropertyDescriptor> allObjectToPropertyDescriptors = Arrays.stream(Introspector.getBeanInfo(objectTo.getClass()).getPropertyDescriptors())
+                .filter(propertyDescriptor -> propertyDescriptor.getWriteMethod() != null && propertyDescriptor.getReadMethod() != null)
+                .collect(Collectors.toList());
+
+            reflectionSimilarClassToClassMethods = allObjectFromPropertyDescriptors.stream()
+                .map(objectFromPropertyDescriptor -> {
+                    Method matchedMethodInObjectToSetter = allObjectToPropertyDescriptors.stream()
+                        .filter(objectToDescriptor ->
+                            objectToDescriptor.getWriteMethod().getName().equals(objectFromPropertyDescriptor.getWriteMethod().getName()) &&
+                            Arrays.equals(objectFromPropertyDescriptor.getWriteMethod().getParameterTypes(),objectToDescriptor.getWriteMethod().getParameterTypes())
+                        )
+                        .map(PropertyDescriptor::getWriteMethod)
+                        .findFirst().orElse(null);
+                    if (matchedMethodInObjectToSetter != null) {
+                        return new ReflectionSimilarClassToClassMethod(objectFromPropertyDescriptor.getReadMethod(),matchedMethodInObjectToSetter);
+                    } else {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+            similarClassToClassMethodGroupingByClassToClassNames.put(key,reflectionSimilarClassToClassMethods);
+        }
+        return reflectionSimilarClassToClassMethods;
     }
 
     public static Class<?> findValueTypeForNonEmptyList(List<?> list) {
