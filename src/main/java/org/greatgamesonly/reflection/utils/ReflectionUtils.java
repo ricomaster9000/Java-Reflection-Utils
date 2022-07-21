@@ -255,11 +255,11 @@ public class ReflectionUtils {
                 throw new Exception("objectFrom and/or objectTo invalid");
             }
             List<PropertyDescriptor> allObjectFromPropertyDescriptors = Arrays.stream(Introspector.getBeanInfo(objectFrom.getClass()).getPropertyDescriptors())
-                    .filter(propertyDescriptor -> propertyDescriptor.getReadMethod() != null)
+                    .filter(propertyDescriptor -> propertyDescriptor.getWriteMethod() != null && propertyDescriptor.getReadMethod() != null)
                     .collect(Collectors.toList());
 
             List<PropertyDescriptor> allObjectToPropertyDescriptors = Arrays.stream(Introspector.getBeanInfo(objectTo.getClass()).getPropertyDescriptors())
-                    .filter(propertyDescriptor -> propertyDescriptor.getWriteMethod() != null)
+                    .filter(propertyDescriptor -> propertyDescriptor.getWriteMethod() != null && propertyDescriptor.getReadMethod() != null)
                     .collect(Collectors.toList());
 
             reflectionSimilarClassToClassMethods = allObjectFromPropertyDescriptors.stream()
