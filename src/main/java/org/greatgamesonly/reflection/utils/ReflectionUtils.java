@@ -254,23 +254,24 @@ public class ReflectionUtils {
             ) {
                 throw new Exception("objectFrom and/or objectTo invalid");
             }
-            List<Method> allObjectFromGetters = Arrays.stream(Introspector.getBeanInfo(objectFrom.getClass()).getPropertyDescriptors())
-                    .map(PropertyDescriptor::getReadMethod)
-                    .filter(Objects::nonNull)
+            List<PropertyDescriptor> allObjectFromPropertyDescriptors = Arrays.stream(Introspector.getBeanInfo(objectFrom.getClass()).getPropertyDescriptors())
+                    .filter(propertyDescriptor -> propertyDescriptor.getReadMethod() != null)
                     .collect(Collectors.toList());
 
-            List<Method> allObjectToSetters = Arrays.stream(Introspector.getBeanInfo(objectTo.getClass()).getPropertyDescriptors())
-                    .map(PropertyDescriptor::getWriteMethod)
-                    .filter(Objects::nonNull)
+            List<PropertyDescriptor> allObjectToPropertyDescriptors = Arrays.stream(Introspector.getBeanInfo(objectTo.getClass()).getPropertyDescriptors())
+                    .filter(propertyDescriptor -> propertyDescriptor.getWriteMethod() != null)
                     .collect(Collectors.toList());
 
-            reflectionSimilarClassToClassMethods = allObjectFromGetters.stream()
-                    .map(objectFromGetter -> {
-                        Method matchedMethodInObjectToSetters = allObjectToSetters.stream()
-                                .filter(objectToSetter -> objectToSetter.getName().equals(objectFromGetter.getName()) && Arrays.equals(objectToSetter.getParameterTypes(), objectFromGetter.getParameterTypes()))
+            reflectionSimilarClassToClassMethods = allObjectFromPropertyDescriptors.stream()
+                    .map(objectFromPropertyDescriptor -> {
+                        Method matchedMethodInObjectToSetter = allObjectToPropertyDescriptors.stream()
+                                .filter(objectToDescriptor ->
+                                        objectToDescriptor.getWriteMethod().getName().equals(objectFromPropertyDescriptor.getWriteMethod().getName()) &&
+                                        Arrays.equals(objectFromPropertyDescriptor.getWriteMethod().getParameterTypes(), objectToDescriptor.getWriteMethod().getParameterTypes())
+                                ).map(PropertyDescriptor::getWriteMethod)
                                 .findFirst().orElse(null);
-                        if (matchedMethodInObjectToSetters != null) {
-                            return new ReflectionSimilarClassToClassMethod(objectFromGetter, matchedMethodInObjectToSetters);
+                        if (matchedMethodInObjectToSetter != null) {
+                            return new ReflectionSimilarClassToClassMethod(objectFromPropertyDescriptor.getReadMethod(), matchedMethodInObjectToSetter);
                         } else {
                             return null;
                         }
@@ -280,13 +281,54 @@ public class ReflectionUtils {
             similarClassToClassMethodGroupingByClassToClassNames.put(key,reflectionSimilarClassToClassMethods);
         }
         for(ReflectionSimilarClassToClassMethod reflectionSimilarClassToClassMethod : reflectionSimilarClassToClassMethods) {
+
+            Object getterValue = callReflectionMethod(objectFrom,reflectionSimilarClassToClassMethod.getMethodObjectFromGetter());
+            if(getterValue == null) {
+                continue;
+            }
+
+            Class<?> setterParamValueType = Collection.class.isAssignableFrom(getterValue.getClass()) ?
+                    findValueTypeForNonEmptyList((List<?>) getterValue) :
+                    getterValue.getClass();
+
+            setterParamValueType = setterParamValueType.isArray() ? findValueTypeForNonEmptyArray(new Object[]{getterValue}) : setterParamValueType;
+
+            if(setterParamValueType == null) {
+                continue;
+            }
+
+            if(
+                !setterParamValueType.isPrimitive() &&
+                !setterParamValueType.isEnum() &&
+                !BASE_VALUE_TYPES.contains(setterParamValueType) &&
+                !checkIfClassIsFromMainJavaPackages(setterParamValueType)
+            ) {
+                getterValue = mergeNonBaseObjectIntoNonBaseObject(objectFrom, objectFrom.getClass().getDeclaredConstructor().newInstance());
+            }
+
             callReflectionMethod(
-                    objectTo,
-                    reflectionSimilarClassToClassMethod.getMethodObjectToSetter(),
-                    callReflectionMethod(objectFrom,reflectionSimilarClassToClassMethod.getMethodObjectFromGetter())
+                objectTo,
+                reflectionSimilarClassToClassMethod.getMethodObjectToSetter(),
+                getterValue
             );
         }
         return objectTo;
+    }
+
+    public static Class<?> findValueTypeForNonEmptyList(List<?> list) {
+        if(list != null && !list.isEmpty() && !list.stream().allMatch(Objects::nonNull)) {
+            return list.stream().filter(Objects::nonNull).findFirst().get().getClass();
+        } else {
+            return null;
+        }
+    }
+
+    public static <T> Class<?> findValueTypeForNonEmptyArray(T[] list) {
+        if(list != null && list.length > 0 && !Arrays.stream(list).allMatch(Objects::nonNull)) {
+            return Arrays.stream(list).filter(Objects::nonNull).findFirst().get().getClass();
+        } else {
+            return null;
+        }
     }
 
 }
