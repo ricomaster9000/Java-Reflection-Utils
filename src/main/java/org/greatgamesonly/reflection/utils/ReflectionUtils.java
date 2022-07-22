@@ -14,7 +14,7 @@ import java.sql.Timestamp;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class ReflectionUtils {
+public final class ReflectionUtils {
 
     public static final List<Class<?>> BASE_VALUE_TYPES = List.of(
             String.class,
@@ -174,9 +174,13 @@ public class ReflectionUtils {
         return methodResult;
     }
 
+    public static Object callReflectionMethodQuick(Object object, String methodName) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+        return callReflectionMethodQuick(object,methodName,null,null);
+    }
+
     public static Object callReflectionMethodQuick(Object object, String methodName, Object methodParam, Class<?> methodParamType) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         boolean setParams = methodParam != null;
-        Method method = methodsCached.get(object.getClass().getName()+"_"+methodName+"_"+methodParamType.getName());
+        Method method = methodsCached.get(object.getClass().getName()+"_"+methodName+"_"+methodParamType);
         if(method == null) {
             method = setParams ? object.getClass().getMethod(methodName, methodParamType) : object.getClass().getMethod(methodName);
             methodsCached.put(object.getClass().getName()+"_"+methodName+"_"+methodParamType.getName(),method);
