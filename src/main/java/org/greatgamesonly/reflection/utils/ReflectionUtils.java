@@ -34,6 +34,7 @@ public class ReflectionUtils {
     );
 
     private static final HashMap<String, List<ReflectionSimilarClassToClassMethod>> similarClassToClassMethodGroupingByClassToClassNames = new HashMap<>();
+    private static final HashMap<String, Method> methodsCached = new HashMap<>();
 
     public static Field[] getClassFields(Class<?> clazz) {
         return getClassFields(clazz, false, new ArrayList<>());
@@ -171,6 +172,16 @@ public class ReflectionUtils {
             }
         }
         return methodResult;
+    }
+
+    public static Object callReflectionMethodNoSetAccessibleMethodCached(Object object, String methodName, Object methodParam, Class<?> methodParamType) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+        boolean setParams = methodParam != null;
+        Method method = methodsCached.get(object.getClass().getName()+"_"+methodName+"_"+methodParamType.getName());
+        if(method == null) {
+            method = setParams ? object.getClass().getMethod(methodName, methodParamType) : object.getClass().getMethod(methodName);
+            methodsCached.put(object.getClass().getName()+"_"+methodName+"_"+methodParamType.getName(),method);
+        }
+        return (setParams) ? method.invoke(object, methodParam) : method.invoke(object);
     }
 
     public static Object callReflectionMethod(Object object, Method method) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
