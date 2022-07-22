@@ -204,11 +204,11 @@ public final class ReflectionUtils {
         return (setParams) ? method.invoke(object, methodParam) : method.invoke(object);
     }
 
-    public static Object callReflectionMethod(Object object, Method method) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+    public static Object callReflectionMethod(Object object, Method method) throws InvocationTargetException, IllegalAccessException {
         return callReflectionMethod(object,method,null);
     }
 
-    public static Object callReflectionMethod(Object object, Method method, Object... methodParams) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+    public static Object callReflectionMethod(Object object, Method method, Object... methodParams) throws InvocationTargetException, IllegalAccessException {
         Object methodResult;
         boolean setParams = method.getParameterTypes().length > 0 && methodParams != null;
         boolean hadToSetMethodToAccessible = false;
@@ -228,6 +228,10 @@ public final class ReflectionUtils {
             }
         }
         return methodResult;
+    }
+
+    public static Object callReflectionMethodQuick(Object object, Method method, Object... methodParams) throws InvocationTargetException, IllegalAccessException {
+        return (methodParams != null) ? method.invoke(object, methodParams) : method.invoke(object);
     }
 
     public static <T> T callReflectionMethodGeneric(Object object, String methodName) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
@@ -312,6 +316,21 @@ public final class ReflectionUtils {
         List<ReflectionSimilarClassToClassMethod> reflectionSimilarClassToClassMethods = getAllSimilarClassToClassMethodToMethodWrappers(objectFrom, objectTo);
         for(ReflectionSimilarClassToClassMethod reflectionSimilarClassToClassMethod : reflectionSimilarClassToClassMethods) {
             Object getterValue = callReflectionMethod(objectFrom,reflectionSimilarClassToClassMethod.getMethodObjectFromGetter());
+            if(getterValue == null) {
+                continue;
+            }
+            callReflectionMethod(objectTo, reflectionSimilarClassToClassMethod.getMethodObjectToSetter(), getterValue);
+        }
+        return objectTo;
+    }
+
+    public static <T> T shallowMergeNonBaseObjectIntoNonBaseObjectQuick(Object objectFrom, T objectTo) throws Exception {
+        List<ReflectionSimilarClassToClassMethod> reflectionSimilarClassToClassMethods = getAllSimilarClassToClassMethodToMethodWrappers(objectFrom, objectTo);
+        for(ReflectionSimilarClassToClassMethod reflectionSimilarClassToClassMethod : reflectionSimilarClassToClassMethods) {
+            if(!reflectionSimilarClassToClassMethod.getMethodObjectToSetter().canAccess(objectTo) || !reflectionSimilarClassToClassMethod.getMethodObjectFromGetter().canAccess(objectFrom)) {
+                continue;
+            }
+            Object getterValue = callReflectionMethodQuick(objectFrom,reflectionSimilarClassToClassMethod.getMethodObjectFromGetter());
             if(getterValue == null) {
                 continue;
             }
