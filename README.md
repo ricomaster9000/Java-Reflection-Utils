@@ -3,6 +3,8 @@ A small library for wrapping some reflection logic
 
 see https://github.com/ricomaster9000/Java-Reflection-Utils/blob/main/src/main/java/org/greatgamesonly/reflection/utils/ReflectionUtils.java for all the methods one can use
 
+add as dependency by using jitpack.io, go to this link: https://jitpack.io/#ricomaster9000/Java-Reflection-Utils/1.0.15.2
+
 ### methods available:
 
     public static Field[] getClassFields(Class<?> clazz)
@@ -44,6 +46,9 @@ see https://github.com/ricomaster9000/Java-Reflection-Utils/blob/main/src/main/j
 
     public static Object callReflectionMethod(Object object, String methodName, Object[] methodParams, Class<?>[] methodParamTypes) 
     throws InvocationTargetException, NoSuchMethodException, IllegalAccessException
+    
+    public static Object callReflectionMethodQuick(Object object, String methodName) throws
+    InvocationTargetException,NoSuchMethodException,IllegalAccessException
 
     public static Object callReflectionMethodQuick(Object object, String methodName, Object methodParam, Class<?> methodParamType) 
     throws InvocationTargetException, NoSuchMethodException, IllegalAccessException
@@ -75,4 +80,3 @@ see https://github.com/ricomaster9000/Java-Reflection-Utils/blob/main/src/main/j
 
     public static <T> Class<?> findValueTypeForNonEmptyArray(T[] list)
 
-add as dependency by using jitpack.io, go to this link: https://jitpack.io/#ricomaster9000/Java-Reflection-Utils/1.0.15.2
