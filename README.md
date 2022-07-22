@@ -3,7 +3,7 @@ A small library for wrapping some reflection logic
 
 see https://github.com/ricomaster9000/Java-Reflection-Utils/blob/main/src/main/java/org/greatgamesonly/reflection/utils/ReflectionUtils.java for all the methods one can use
 
-###methods available:
+### methods available:
 
     public static Field[] getClassFields(Class<?> clazz)
 
