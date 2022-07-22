@@ -3,7 +3,7 @@ A small library for wrapping some reflection logic
 
 see https://github.com/ricomaster9000/Java-Reflection-Utils/blob/main/src/main/java/org/greatgamesonly/reflection/utils/ReflectionUtils.java for all the methods one can use
 
-add as dependency by using jitpack.io, go to this link: https://jitpack.io/#ricomaster9000/Java-Reflection-Utils/1.0.17
+add as dependency by using jitpack.io, go to this link: https://jitpack.io/#ricomaster9000/Java-Reflection-Utils/1.0.18
 
 ### methods available:
 
@@ -51,6 +51,9 @@ add as dependency by using jitpack.io, go to this link: https://jitpack.io/#rico
     InvocationTargetException,NoSuchMethodException,IllegalAccessException
 
     public static Object callReflectionMethodQuick(Object object, String methodName, Object methodParam, Class<?> methodParamType) 
+    throws InvocationTargetException, NoSuchMethodException, IllegalAccessException
+
+    public static Object callReflectionMethodQuick(Object object, String methodName, Object[] methodParam, Class<?>[] methodParamType) 
     throws InvocationTargetException, NoSuchMethodException, IllegalAccessException
 
     public static Object callReflectionMethod(Object object, Method method) throws InvocationTargetException, NoSuchMethodException, 

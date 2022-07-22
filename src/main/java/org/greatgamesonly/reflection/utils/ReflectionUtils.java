@@ -175,15 +175,31 @@ public final class ReflectionUtils {
     }
 
     public static Object callReflectionMethodQuick(Object object, String methodName) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
-        return callReflectionMethodQuick(object,methodName,null,null);
+        return callReflectionMethodQuick(object,methodName,null,Object.class);
     }
 
     public static Object callReflectionMethodQuick(Object object, String methodName, Object methodParam, Class<?> methodParamType) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         boolean setParams = methodParam != null;
-        Method method = methodsCached.get(object.getClass().getName()+"_"+methodName+"_"+methodParamType);
+        String methodCacheKey = object.getClass().getName()+"_"+methodName+"_"+methodParamType;
+        Method method = methodsCached.get(methodCacheKey);
         if(method == null) {
             method = setParams ? object.getClass().getMethod(methodName, methodParamType) : object.getClass().getMethod(methodName);
-            methodsCached.put(object.getClass().getName()+"_"+methodName+"_"+methodParamType.getName(),method);
+            methodsCached.put(methodCacheKey,method);
+        }
+        return (setParams) ? method.invoke(object, methodParam) : method.invoke(object);
+    }
+
+    public static Object callReflectionMethodQuick(Object object, String methodName, Object[] methodParam, Class<?>[] methodParamType) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+        boolean setParams = methodParam != null && methodParam.length > 0;
+
+        String methodCacheKey = setParams ?
+                object.getClass().getName()+"_"+methodName+"_"+methodParamType[0]+"_"+methodParamType.length :
+                object.getClass().getName()+"_"+methodName;
+
+        Method method = methodsCached.get(methodCacheKey);
+        if(method == null) {
+            method = setParams ? object.getClass().getMethod(methodName, methodParamType) : object.getClass().getMethod(methodName);
+            methodsCached.put(methodCacheKey,method);
         }
         return (setParams) ? method.invoke(object, methodParam) : method.invoke(object);
     }
@@ -285,7 +301,7 @@ public final class ReflectionUtils {
                 !BASE_VALUE_TYPES.contains(setterParamValueType) &&
                 !checkIfClassIsFromMainJavaPackages(setterParamValueType)
             ) {
-                getterValue = mergeNonBaseObjectIntoNonBaseObject(objectFrom, objectFrom.getClass().getDeclaredConstructor().newInstance());
+                getterValue = mergeNonBaseObjectIntoNonBaseObject(getterValue, setterParamValueType.getDeclaredConstructor().newInstance());
             }
             callReflectionMethod(objectTo, reflectionSimilarClassToClassMethod.getMethodObjectToSetter(), getterValue);
         }
