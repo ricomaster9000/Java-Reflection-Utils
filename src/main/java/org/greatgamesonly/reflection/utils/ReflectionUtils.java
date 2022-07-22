@@ -56,8 +56,8 @@ public final class ReflectionUtils {
                         field.getType().isPrimitive() ||
                         field.getType().isEnum() ||
                         (includeLists && Collection.class.isAssignableFrom(field.getType())) ||
-                        bypassWithTheseAnnotations.stream().noneMatch(bypassWithTheseAnnotation -> Arrays.asList(field.getAnnotations()).contains(bypassWithTheseAnnotation)))
-                ).toArray(Field[]::new);
+                        Arrays.stream(field.getAnnotations()).noneMatch(annotation -> bypassWithTheseAnnotations.contains(annotation.annotationType()))
+                )).toArray(Field[]::new);
     }
 
     public static Set<String> getGetters(Class<?> clazz) throws IntrospectionException {
