@@ -56,7 +56,7 @@ public final class ReflectionUtils {
                         field.getType().isPrimitive() ||
                         field.getType().isEnum() ||
                         (includeLists && Collection.class.isAssignableFrom(field.getType()))) &&
-                        (bypassWithTheseAnnotations != null && Arrays.stream(field.getAnnotations()).noneMatch(annotation -> bypassWithTheseAnnotations.contains(annotation.annotationType())))
+                        Arrays.stream(field.getAnnotations()).noneMatch(annotation -> bypassWithTheseAnnotations != null && bypassWithTheseAnnotations.contains(annotation.annotationType()))
                 )).toArray(Field[]::new);
     }
 
