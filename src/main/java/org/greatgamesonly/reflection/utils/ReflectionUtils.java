@@ -174,7 +174,7 @@ public class ReflectionUtils {
         return methodResult;
     }
 
-    public static Object callReflectionMethodNoSetAccessibleMethodCached(Object object, String methodName, Object methodParam, Class<?> methodParamType) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+    public static Object callReflectionMethodQuick(Object object, String methodName, Object methodParam, Class<?> methodParamType) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         boolean setParams = methodParam != null;
         Method method = methodsCached.get(object.getClass().getName()+"_"+methodName+"_"+methodParamType.getName());
         if(method == null) {
