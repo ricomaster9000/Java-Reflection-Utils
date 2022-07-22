@@ -51,12 +51,12 @@ public final class ReflectionUtils {
     public static Field[] getClassFields(Class<?> clazz, boolean excludeDeclaredCustomClassFields, List<Class<? extends Annotation>> bypassWithTheseAnnotations, boolean includeLists) {
         return Arrays.stream(clazz.getDeclaredFields())
                 .filter(field -> (
-                        (!excludeDeclaredCustomClassFields && !checkIfClassIsFromMainJavaPackages(field.getType())) ||
+                        ((!excludeDeclaredCustomClassFields && !checkIfClassIsFromMainJavaPackages(field.getType())) ||
                         BASE_VALUE_TYPES.contains(field.getType()) ||
                         field.getType().isPrimitive() ||
                         field.getType().isEnum() ||
-                        (includeLists && Collection.class.isAssignableFrom(field.getType())) ||
-                        Arrays.stream(field.getAnnotations()).noneMatch(annotation -> bypassWithTheseAnnotations.contains(annotation.annotationType()))
+                        (includeLists && Collection.class.isAssignableFrom(field.getType()))) &&
+                        (bypassWithTheseAnnotations != null && Arrays.stream(field.getAnnotations()).noneMatch(annotation -> bypassWithTheseAnnotations.contains(annotation.annotationType())))
                 )).toArray(Field[]::new);
     }
 
