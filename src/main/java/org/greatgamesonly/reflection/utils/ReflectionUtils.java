@@ -179,8 +179,8 @@ public final class ReflectionUtils {
     }
 
     public static Object callReflectionMethodQuick(Object object, String methodName, Object methodParam, Class<?> methodParamType) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
-        boolean setParams = methodParam != null;
-        String methodCacheKey = object.getClass().getName()+"_"+methodName+"_"+methodParamType;
+        boolean setParams = methodParam != null && methodParamType != null;
+        String methodCacheKey = String.format("cc%s_%s__%s",object.getClass(),methodName,methodParamType);
         Method method = methodsCached.get(methodCacheKey);
         if(method == null) {
             method = setParams ? object.getClass().getMethod(methodName, methodParamType) : object.getClass().getMethod(methodName);
@@ -193,8 +193,8 @@ public final class ReflectionUtils {
         boolean setParams = methodParam != null && methodParam.length > 0;
 
         String methodCacheKey = setParams ?
-                object.getClass().getName()+"_"+methodName+"_"+methodParamType[0]+"_"+methodParamType.length :
-                object.getClass().getName()+"_"+methodName;
+                object.getClass()+"_"+methodName+"_"+methodParamType[0]+"_"+methodParamType.length :
+                object.getClass()+"_"+methodName;
 
         Method method = methodsCached.get(methodCacheKey);
         if(method == null) {
