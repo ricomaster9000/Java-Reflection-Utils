@@ -1,4 +1,4 @@
-package org.greatgamesonly.reflection.utils;
+package org.greatgamesonly.opensource.utils.reflectionutils;
 
 import java.lang.reflect.Method;
 
