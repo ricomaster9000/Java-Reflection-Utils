@@ -30,7 +30,8 @@ public final class ReflectionUtils {
             BigDecimal.class,
             BigInteger.class,
             Character.class,
-            Calendar.class
+            Calendar.class,
+            byte[].class
     );
 
     private static final HashMap<String, List<ReflectionSimilarClassToClassMethod>> similarClassToClassMethodGroupingByClassToClassNames = new HashMap<>();
