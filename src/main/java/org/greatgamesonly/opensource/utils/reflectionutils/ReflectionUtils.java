@@ -37,6 +37,12 @@ public final class ReflectionUtils {
 
     private static final HashMap<String, List<ReflectionSimilarClassToClassMethod>> similarClassToClassMethodGroupingByClassToClassNames = new HashMap<>();
     private static final HashMap<String, Method> methodsCached = new HashMap<>();
+    private static final String CALL_METHOD_QUICK_CACHE_KEY_LOOKUP_UNFORMATTED = "cc%s_%s__%s";
+
+    public static boolean fieldExists(String field, Class<?> clazz) {
+        return Arrays.stream(getClassFields(clazz, false,null)).
+                anyMatch(clazzField -> clazzField.getName().equals(field));
+    }
 
     public static Field[] getClassFields(Class<?> clazz) {
         return getClassFields(clazz, false, new ArrayList<>());
@@ -182,13 +188,30 @@ public final class ReflectionUtils {
 
     public static Object callReflectionMethodQuick(Object object, String methodName, Object methodParam, Class<?> methodParamType) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         boolean setParams = methodParam != null && methodParamType != null;
-        String methodCacheKey = String.format("cc%s_%s__%s",object.getClass(),methodName,methodParamType);
+        String methodCacheKey = String.format(CALL_METHOD_QUICK_CACHE_KEY_LOOKUP_UNFORMATTED,object.getClass(),methodName,methodParamType);
         Method method = methodsCached.get(methodCacheKey);
         if(method == null) {
             method = setParams ? object.getClass().getMethod(methodName, methodParamType) : object.getClass().getMethod(methodName);
             methodsCached.put(methodCacheKey,method);
         }
         return (setParams) ? method.invoke(object, methodParam) : method.invoke(object);
+    }
+
+    public static Object callReflectionMethodQuickIgnoreException(Object object, String methodName, Object methodParam, Class<?> methodParamType) {
+        Object result = null;
+        boolean setParams = methodParam != null && methodParamType != null;
+        String methodCacheKey;
+        Method method;
+        try {
+            methodCacheKey = String.format(CALL_METHOD_QUICK_CACHE_KEY_LOOKUP_UNFORMATTED,object.getClass(),methodName,methodParamType);
+            method = methodsCached.get(methodCacheKey);
+            if (method == null) {
+                method = setParams ? object.getClass().getMethod(methodName, methodParamType) : object.getClass().getMethod(methodName);
+                methodsCached.put(methodCacheKey, method);
+            }
+            result = (setParams) ? method.invoke(object, methodParam) : method.invoke(object);
+        } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException ignored) {}
+        return result;
     }
 
     public static Object callReflectionMethodQuick(Object object, String methodName, Object[] methodParam, Class<?>[] methodParamType) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
