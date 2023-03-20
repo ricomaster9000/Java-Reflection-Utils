@@ -18,20 +18,21 @@ public final class ReflectionUtils {
 
     public static final List<Class<?>> BASE_VALUE_TYPES = List.of(
             String.class,
-            Long.class,
+            Character.class,
+            Byte.class,
             Integer.class,
-            java.sql.Date.class,
-            java.util.Date.class,
+            Short.class,
+            Long.class,
             Boolean.class,
-            Timestamp.class,
             Double.class,
             Float.class,
-            Short.class,
             BigDecimal.class,
             BigInteger.class,
-            Character.class,
+            Timestamp.class,
             Calendar.class,
-            byte[].class
+            java.sql.Date.class,
+            java.util.Date.class,
+            byte[].class // its sort of primitive just wrapped in a array and the usual base way of working with bytes for every object
     );
 
     private static final HashMap<String, List<ReflectionSimilarClassToClassMethod>> similarClassToClassMethodGroupingByClassToClassNames = new HashMap<>();
