@@ -44,6 +44,30 @@ public final class ReflectionUtils {
                 anyMatch(clazzField -> clazzField.getName().equals(field));
     }
 
+    public static <T> T getFieldValueNoException(String field, Object instance) {
+        T result = null;
+        try {
+            result = getFieldValue(field, instance);
+        } catch (NoSuchFieldException | IllegalAccessException ignored) {}
+        return result;
+    }
+
+    public static <T> T getFieldValue(String field, Object instance) throws NoSuchFieldException, IllegalAccessException {
+        T result = null;
+        Field fieldReflection = instance.getClass().getField(field);
+        if(!fieldReflection.canAccess(instance)) {
+            fieldReflection.setAccessible(true);
+            try {
+                result = (T) fieldReflection.get(instance);
+            } finally {
+                fieldReflection.setAccessible(false);
+            }
+        } else {
+            result = (T) fieldReflection.get(instance);
+        }
+        return result;
+    }
+
     public static Field[] getClassFields(Class<?> clazz) {
         return getClassFields(clazz, false, new ArrayList<>());
     }
