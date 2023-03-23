@@ -7,6 +7,12 @@ add as dependency by using jitpack.io, go to this link: https://jitpack.io/#rico
 
 ### methods available:
 
+    public static boolean fieldExists(String field, Class<?> clazz)
+
+    public static <T> T getFieldValue(String field, Object instance) throws NoSuchFieldException, IllegalAccessException
+
+    public static <T> T getFieldValueNoException(String field, Object instance)
+
     public static Field[] getClassFields(Class<?> clazz)
 
     public static Field[] getClassFields(Class<?> clazz, boolean excludeDeclaredCustomClassFields)
@@ -55,6 +61,8 @@ add as dependency by using jitpack.io, go to this link: https://jitpack.io/#rico
 
     public static Object callReflectionMethodQuick(Object object, String methodName, Object[] methodParam, Class<?>[] methodParamType) 
     throws InvocationTargetException, NoSuchMethodException, IllegalAccessException
+
+    public static Object callReflectionMethodQuickIgnoreException(Object object, String methodName, Object methodParam, Class<?> methodParamType)
 
     public static Object callReflectionMethod(Object object, Method method) throws InvocationTargetException, IllegalAccessException
 
