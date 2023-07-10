@@ -28,6 +28,7 @@ public final class ReflectionUtils {
             Float.class,
             BigDecimal.class,
             BigInteger.class,
+            Number.class,
             Timestamp.class,
             Calendar.class,
             java.sql.Date.class,
@@ -37,7 +38,9 @@ public final class ReflectionUtils {
 
     private static final HashMap<String, List<ReflectionSimilarClassToClassMethod>> similarClassToClassMethodGroupingByClassToClassNames = new HashMap<>();
     private static final HashMap<String, Method> methodsCached = new HashMap<>();
+    private static final HashMap<String, Field> fieldsCached = new HashMap<>();
     private static final String CALL_METHOD_QUICK_CACHE_KEY_LOOKUP_UNFORMATTED = "cc%s_%s__%s";
+    private static final String SET_FIELD_QUICK_CACHE_KEY_LOOKUP_UNFORMATTED = "ff%s_%s__";
 
     public static boolean fieldExists(String field, Class<?> clazz) {
         return Arrays.stream(getClassFields(clazz, false,null)).
@@ -66,6 +69,27 @@ public final class ReflectionUtils {
             result = (T) fieldReflection.get(instance);
         }
         return result;
+    }
+
+    public static void setFieldToNull(Object object, String fieldName) throws IllegalAccessException, NoSuchFieldException {
+        String fieldCacheKey = String.format(SET_FIELD_QUICK_CACHE_KEY_LOOKUP_UNFORMATTED,object.getClass(),fieldName);
+        Field field = fieldsCached.get(fieldCacheKey);
+        boolean hadToSetMethodToAccessible = false;
+        if(field == null) {
+            field = object.getClass().getDeclaredField(fieldName);
+            fieldsCached.put(fieldCacheKey, field);
+        }
+        try {
+            if(!field.canAccess(object)) {
+                field.setAccessible(true);
+                hadToSetMethodToAccessible = true;
+            }
+            field.set(object, new Object[]{null});
+        } finally {
+            if(hadToSetMethodToAccessible) {
+                field.setAccessible(false);
+            }
+        }
     }
 
     public static Field[] getClassFields(Class<?> clazz) {
