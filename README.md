@@ -3,7 +3,7 @@ A small library for wrapping some reflection logic
 
 see https://github.com/ricomaster9000/Java-Reflection-Utils/blob/main/src/main/java/org/greatgamesonly/opensource/utils/reflectionutils/ReflectionUtils.java for all the methods one can use
 
-add as dependency by using jitpack.io, go to this link: https://jitpack.io/#ricomaster9000/Java-Reflection-Utils/1.0.24
+add as dependency by using jitpack.io, go to this link: https://jitpack.io/#ricomaster9000/Java-Reflection-Utils/1.0.27
 
 ### methods available:
 
@@ -12,6 +12,8 @@ add as dependency by using jitpack.io, go to this link: https://jitpack.io/#rico
     public static <T> T getFieldValue(String field, Object instance) throws NoSuchFieldException, IllegalAccessException
 
     public static <T> T getFieldValueNoException(String field, Object instance)
+
+    public static void setFieldToNull(Object object, String fieldName) throws IllegalAccessException, NoSuchFieldException
 
     public static Field[] getClassFields(Class<?> clazz)
 
