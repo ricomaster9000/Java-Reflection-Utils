@@ -84,7 +84,7 @@ public final class ReflectionUtils {
                 field.setAccessible(true);
                 hadToSetMethodToAccessible = true;
             }
-            field.set(object, new Object[]{null});
+            field.set(object, null);
         } finally {
             if(hadToSetMethodToAccessible) {
                 field.setAccessible(false);
