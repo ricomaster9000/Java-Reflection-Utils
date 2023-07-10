@@ -57,7 +57,7 @@ public final class ReflectionUtils {
 
     public static <T> T getFieldValue(String field, Object instance) throws NoSuchFieldException, IllegalAccessException {
         T result = null;
-        Field fieldReflection = instance.getClass().getField(field);
+        Field fieldReflection = instance.getClass().getDeclaredField(field);
         if(!fieldReflection.canAccess(instance)) {
             fieldReflection.setAccessible(true);
             try {
