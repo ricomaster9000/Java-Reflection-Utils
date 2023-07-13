@@ -178,6 +178,10 @@ public final class ReflectionUtils {
                 .collect(Collectors.toSet());
     }
 
+    public static String capitalize(String str) {
+        return capitalizeString(str);
+    }
+
     public static String capitalizeString(String str) {
         return (str != null && str.length() > 0) ? str.substring(0, 1).toUpperCase() + str.substring(1) : str;
     }
@@ -193,12 +197,16 @@ public final class ReflectionUtils {
     }
 
     public static boolean checkIfClassIsFromMainJavaPackages(Class<?> clazz) {
-        return (clazz.getName().startsWith("java.lang") ||
-                clazz.getName().startsWith("java.") ||
+        return (clazz.getName().startsWith("java.") ||
                 clazz.getName().startsWith("javax.") ||
-                clazz.getName().startsWith("com.sun") ||
-                clazz.getName().startsWith("com.oracle") ||
-                clazz.getName().startsWith("org.apache.")
+                clazz.getName().startsWith("javafx.") ||
+                clazz.getName().startsWith("com.sun.") ||
+                clazz.getName().startsWith("com.oracle.") ||
+                clazz.getName().startsWith("org.apache.") ||
+                clazz.getName().startsWith("jdk.") ||
+                clazz.getName().startsWith("org.w3c.") ||
+                clazz.getName().startsWith("org.xml.") ||
+                clazz.getName().startsWith("org.ietf.")
         );
     }
 
@@ -243,6 +251,10 @@ public final class ReflectionUtils {
             methodsCached.put(methodCacheKey,method);
         }
         return (setParams) ? method.invoke(object, methodParam) : method.invoke(object);
+    }
+
+    public static Object callReflectionMethodQuickIgnoreException(Object object, String methodName) {
+        return callReflectionMethodQuickIgnoreException(object,methodName, null, Object.class);
     }
 
     public static Object callReflectionMethodQuickIgnoreException(Object object, String methodName, Object methodParam, Class<?> methodParamType) {
