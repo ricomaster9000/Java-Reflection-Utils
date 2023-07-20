@@ -72,6 +72,16 @@ public final class ReflectionUtils {
     }
 
     public static void setFieldToNull(Object object, String fieldName) throws IllegalAccessException, NoSuchFieldException {
+        setFieldValue(object, fieldName, null);
+    }
+
+    public static void setFieldValueNoException(Object object, String fieldName, Object fieldValue) {
+        try {
+            setFieldValue(object,fieldName,fieldValue);
+        } catch (NoSuchFieldException | IllegalAccessException ignored) {}
+    }
+
+    public static void setFieldValue(Object object, String fieldName, Object fieldValue) throws IllegalAccessException, NoSuchFieldException {
         String fieldCacheKey = String.format(SET_FIELD_QUICK_CACHE_KEY_LOOKUP_UNFORMATTED,object.getClass(),fieldName);
         Field field = fieldsCached.get(fieldCacheKey);
         boolean hadToSetMethodToAccessible = false;
@@ -84,7 +94,7 @@ public final class ReflectionUtils {
                 field.setAccessible(true);
                 hadToSetMethodToAccessible = true;
             }
-            field.set(object, null);
+            field.set(object, fieldValue);
         } finally {
             if(hadToSetMethodToAccessible) {
                 field.setAccessible(false);
