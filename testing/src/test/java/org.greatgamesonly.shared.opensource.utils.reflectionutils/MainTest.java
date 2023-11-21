@@ -92,12 +92,12 @@ public class MainTest {
     }
 
     @Test()
-    public void testGetPublicConstantsInClass() throws IOException, ClassNotFoundException {
+    public void testGetPublicConstantsInClass() throws IOException, ClassNotFoundException, NoSuchFieldException, IllegalAccessException {
         System.out.println("TESTS - test get public constants from class");
 
-        List<Field> classes = ReflectionUtils.getAllConstantFields("org.greatgamesonly.shared.opensource.utils.reflectionutils");
+        List<Object> constantObjects = ReflectionUtils.getAllConstantValuesInClass(TestModelClass.class);
 
-        Assert.assertTrue("TestModelClass class must be returned in retrieved classes", classes.stream().anyMatch(field -> field.getName().equals("CONSTANT_TEST")));
+        Assert.assertTrue("TestModelClass class must be returned in retrieved classes", constantObjects.stream().anyMatch(constant -> constant.equals("test_constant_value")));
     }
 
     @AfterClass

@@ -3,7 +3,7 @@ A small library for wrapping some reflection logic
 
 see https://github.com/ricomaster9000/Java-Reflection-Utils/blob/main/src/main/java/org/greatgamesonly/opensource/utils/reflectionutils/ReflectionUtils.java for all the methods one can use
 
-add as dependency by using jitpack.io, go to this link: https://jitpack.io/#ricomaster9000/Java-Reflection-Utils/1.0.50
+add as dependency by using jitpack.io, go to this link: https://jitpack.io/#ricomaster9000/Java-Reflection-Utils/1.0.71
 
 ### methods available:
 
@@ -46,6 +46,10 @@ add as dependency by using jitpack.io, go to this link: https://jitpack.io/#rico
 
     public static Set<String> getSetters(Class<?> clazz, List<Class<?>> onlyForTheseValueTypes, boolean includePrimitives, boolean 
     includeEnums, boolean includeLists) throws IntrospectionException
+
+    public static List<Object> getAllConstantValuesInClass(String packageName) throws IOException, ClassNotFoundException
+
+    public static List<Class<?>> getClasses(String packageName) throws ClassNotFoundException, IOException
 
     public static String capitalize(String str)
 

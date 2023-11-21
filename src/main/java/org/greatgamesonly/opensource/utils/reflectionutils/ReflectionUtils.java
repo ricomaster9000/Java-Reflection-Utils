@@ -244,29 +244,21 @@ public final class ReflectionUtils {
         return classes;
     }
 
-    public static List<Field> getAllConstantFields(String packageName) throws IOException, ClassNotFoundException {
-        List<Field> constantFields = new ArrayList<>();
+    public static List<Object> getAllConstantValuesInClass(Class<?> clazz) throws IOException, ClassNotFoundException, NoSuchFieldException, IllegalAccessException {
+        List<Object> result = new ArrayList<>();
 
-        // Get all classes in the specified package
-        // You can use a package scanning library or implement your own logic
-        // to find classes in the package.
-        // For simplicity, we assume you have a list of classes here.
-        List<Class<?>> classesInPackage = getClasses(packageName);
-
-        for (Class<?> clazz : classesInPackage) {
-            Field[] fields = clazz.getDeclaredFields();
-            for (Field field : fields) {
-                // Check if the field is a constant (static and final)
-                if (isConstantField(field)) {
-                    constantFields.add(field);
-                }
+        Field[] fields = getClassFields(clazz);
+        for (Field field : fields) {
+            // Check if the field is a constant (static and final)
+            if (isConstantField(field)) {
+                result.add(clazz.getDeclaredField(field.getName()).get(null));
             }
         }
 
-        return constantFields;
+        return result;
     }
 
-    private static boolean isConstantField(Field field) {
+    public static boolean isConstantField(Field field) {
         // Check if the field is a constant (static and final)
         int modifiers = field.getModifiers();
         return (java.lang.reflect.Modifier.isStatic(modifiers) && java.lang.reflect.Modifier.isFinal(modifiers));
