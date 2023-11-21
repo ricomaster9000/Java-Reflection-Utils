@@ -8,6 +8,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.List;
 
 public class MainTest {
@@ -88,6 +89,15 @@ public class MainTest {
         List<Class<?>> classes = ReflectionUtils.getClasses("org.greatgamesonly.shared.opensource.utils.reflectionutils");
 
         Assert.assertTrue("TestModelClass class must be returned in retrieved classes", classes.contains(TestModelClass.class));
+    }
+
+    @Test()
+    public void testGetPublicConstantsInClass() throws IOException, ClassNotFoundException {
+        System.out.println("TESTS - test get public constants from class");
+
+        List<Field> classes = ReflectionUtils.getAllConstantFields("org.greatgamesonly.shared.opensource.utils.reflectionutils");
+
+        Assert.assertTrue("TestModelClass class must be returned in retrieved classes", classes.stream().anyMatch(field -> field.getName().equals("CONSTANT_TEST")));
     }
 
     @AfterClass
