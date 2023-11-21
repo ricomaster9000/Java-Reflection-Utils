@@ -215,9 +215,7 @@ public final class ReflectionUtils {
             List<Class<?>> innerClasses = findClasses(directory, packageName);
             for (Class<?> clazz : innerClasses) {
                 Class<?> classToAdd = getClassByName(clazz.getName());
-                classToAdd = classToAdd == null ? getClassByName(clazz.getTypeName()) : classToAdd;
-                classToAdd = classToAdd == null ? getClassByName(clazz.getSimpleName()) : classToAdd;
-                classToAdd = classToAdd == null ?Class.forName(clazz.getName()) : classToAdd;
+                classToAdd = classToAdd == null ? Class.forName(clazz.getName()) : classToAdd;
                 classes.add(classToAdd);
             }
         }
@@ -444,12 +442,17 @@ public final class ReflectionUtils {
         Method method = null;
         boolean methodHadToBeSetToAccessible = false;
         try {
-            method = Thread.currentThread().getContextClassLoader().getClass().getDeclaredMethod("findClass", String.class, String.class);
-            if(!method.canAccess(Thread.currentThread().getContextClassLoader())) {
-                method.setAccessible(true);
-                methodHadToBeSetToAccessible = true;
+            try {
+                result = Thread.currentThread().getContextClassLoader().loadClass(fullName);
+            } catch (ClassNotFoundException ignore) {}
+            if(result == null) {
+                method = Thread.currentThread().getContextClassLoader().getClass().getDeclaredMethod("findClass", String.class, String.class);
+                if (!method.canAccess(Thread.currentThread().getContextClassLoader())) {
+                    method.setAccessible(true);
+                    methodHadToBeSetToAccessible = true;
+                }
+                result = (Class<?>) method.invoke(Thread.currentThread().getContextClassLoader(), Thread.currentThread().getContextClassLoader().getUnnamedModule().getName(), fullName);
             }
-            result = (Class<?>) method.invoke(Thread.currentThread().getContextClassLoader(), Thread.currentThread().getContextClassLoader().getUnnamedModule().getName(), fullName);
         } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             return null;
         } finally {
