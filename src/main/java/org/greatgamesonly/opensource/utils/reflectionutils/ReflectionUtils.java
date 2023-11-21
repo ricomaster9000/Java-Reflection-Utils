@@ -3,6 +3,8 @@ package org.greatgamesonly.opensource.utils.reflectionutils;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
+import java.io.File;
+import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
@@ -10,6 +12,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.URL;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -186,6 +189,87 @@ public final class ReflectionUtils {
                 )
                 .map(propertyDescriptor -> propertyDescriptor.getWriteMethod().getName())
                 .collect(Collectors.toSet());
+    }
+
+    /**
+     * Scans all classes accessible from the context class loader which belong to the given package and subpackages.
+     *
+     * @param packageName The base package
+     * @return The classes
+     * @throws ClassNotFoundException
+     * @throws IOException
+     */
+    public static List<Class<?>> getClasses(String packageName)
+            throws ClassNotFoundException, IOException {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        assert classLoader != null;
+        String path = packageName.replace('.', '/');
+        Enumeration<URL> resources = classLoader.getResources(path);
+        List<File> dirs = new ArrayList<File>();
+        while (resources.hasMoreElements()) {
+            URL resource = resources.nextElement();
+            dirs.add(new File(resource.getFile()));
+        }
+        ArrayList<Class<?>> classes = new ArrayList<>();
+        for (File directory : dirs) {
+            classes.addAll(findClasses(directory, packageName));
+        }
+        return classes;
+    }
+
+    /**
+     * Recursive method used to find all classes in a given directory and subdirs.
+     *
+     * @param directory   The base directory
+     * @param packageName The package name for classes found inside the base directory
+     * @return The classes
+     * @throws ClassNotFoundException
+     */
+    private static List<Class<?>> findClasses(File directory, String packageName) throws ClassNotFoundException {
+        List<Class<?>> classes = new ArrayList<>();
+        if (!directory.exists()) {
+            return classes;
+        }
+        File[] files = directory.listFiles();
+        if(files != null) {
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    assert !file.getName().contains(".");
+                    classes.addAll(findClasses(file, packageName + "." + file.getName()));
+                } else if (file.getName().endsWith(".class")) {
+                    classes.add(Class.forName(packageName + '.' + file.getName().substring(0, file.getName().length() - 6)));
+                }
+            }
+        }
+        return classes;
+    }
+
+    public static List<Field> getAllConstantFields(String packageName) throws IOException, ClassNotFoundException {
+        List<Field> constantFields = new ArrayList<>();
+
+        // Get all classes in the specified package
+        // You can use a package scanning library or implement your own logic
+        // to find classes in the package.
+        // For simplicity, we assume you have a list of classes here.
+        List<Class<?>> classesInPackage = getClasses(packageName);
+
+        for (Class<?> clazz : classesInPackage) {
+            Field[] fields = clazz.getDeclaredFields();
+            for (Field field : fields) {
+                // Check if the field is a constant (static and final)
+                if (isConstantField(field)) {
+                    constantFields.add(field);
+                }
+            }
+        }
+
+        return constantFields;
+    }
+
+    private static boolean isConstantField(Field field) {
+        // Check if the field is a constant (static and final)
+        int modifiers = field.getModifiers();
+        return (java.lang.reflect.Modifier.isStatic(modifiers) && java.lang.reflect.Modifier.isFinal(modifiers));
     }
 
     public static String capitalize(String str) {
