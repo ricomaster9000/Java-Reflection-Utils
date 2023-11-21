@@ -7,6 +7,9 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.util.List;
+
 public class MainTest {
 
 
@@ -76,6 +79,15 @@ public class MainTest {
         }
 
         Assert.assertFalse("setFieldToValueNoException - no exception must be thrown - first try", exceptionThrown2);
+    }
+
+    @Test()
+    public void testGetClassesInPackage() throws IOException, ClassNotFoundException {
+        System.out.println("TESTS - test get classes from package name");
+
+        List<Class<?>> classes = ReflectionUtils.getClasses("org.greatgamesonly.shared.opensource.utils.reflectionutils");
+
+        Assert.assertTrue("TestModelClass class must be returned in retrieved classes", classes.contains(TestModelClass.class));
     }
 
     @AfterClass
