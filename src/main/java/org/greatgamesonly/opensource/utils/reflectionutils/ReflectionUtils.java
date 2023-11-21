@@ -212,7 +212,14 @@ public final class ReflectionUtils {
         }
         ArrayList<Class<?>> classes = new ArrayList<>();
         for (File directory : dirs) {
-            classes.addAll(findClasses(directory, packageName));
+            List<Class<?>> innerClasses = findClasses(directory, packageName);
+            for (Class<?> clazz : innerClasses) {
+                Class<?> classToAdd = getClassByName(clazz.getName());
+                classToAdd = classToAdd == null ? getClassByName(clazz.getTypeName()) : classToAdd;
+                classToAdd = classToAdd == null ? getClassByName(clazz.getSimpleName()) : classToAdd;
+                classToAdd = classToAdd == null ?Class.forName(clazz.getName()) : classToAdd;
+                classes.add(classToAdd);
+            }
         }
         return classes;
     }
