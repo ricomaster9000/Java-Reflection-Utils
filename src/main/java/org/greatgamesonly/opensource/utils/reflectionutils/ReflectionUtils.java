@@ -206,38 +206,37 @@ public final class ReflectionUtils {
     public static List<Class<?>> getClasses(String packageName)
             throws ClassNotFoundException, IOException {
 
-        List<Class<?>> classesFoundUsingSystemClassLoader = findAllClassesUsingRunningJarFile(packageName);
-
-        if(classesFoundUsingSystemClassLoader.size() <= 0) {
-            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-            assert classLoader != null;
-            String path = packageName.replace('.', '/');
-            Enumeration<URL> resources = classLoader.getResources(path);
-            List<File> dirs = new ArrayList<File>();
-            while (resources.hasMoreElements()) {
-                URL resource = resources.nextElement();
-                dirs.add(new File(resource.getFile()));
-            }
-            ArrayList<Class<?>> classes = new ArrayList<>();
-            for (File directory : dirs) {
-                List<Class<?>> innerClasses = findClasses(directory, packageName);
-                for (Class<?> clazz : innerClasses) {
-                    Class<?> classToAdd = getClassByName(clazz.getName());
-                    classToAdd = classToAdd == null ? Class.forName(clazz.getName()) : classToAdd;
-                    classes.add(classToAdd);
-                }
-            }
-            return classes;
-        } else {
-            return classesFoundUsingSystemClassLoader;
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        assert classLoader != null;
+        String path = packageName.replace('.', '/');
+        Enumeration<URL> resources = classLoader.getResources(path);
+        List<File> dirs = new ArrayList<File>();
+        while (resources.hasMoreElements()) {
+            URL resource = resources.nextElement();
+            dirs.add(new File(resource.getFile()));
         }
+        List<Class<?>> classes = new ArrayList<>();
+        for (File directory : dirs) {
+            List<Class<?>> innerClasses = findClasses(directory, packageName);
+            for (Class<?> clazz : innerClasses) {
+                Class<?> classToAdd = getClassByName(clazz.getName());
+                classToAdd = classToAdd == null ? Class.forName(clazz.getName()) : classToAdd;
+                classes.add(classToAdd);
+            }
+        }
+
+        if(classes.size() <= 0) {
+            classes = findAllClassesUsingRunningJarFile(packageName);
+        }
+
+        return classes;
     }
 
     public static List<Class<?>> findAllClassesUsingRunningJarFile(String packageName) {
         List<Class<?>> result = new ArrayList<>();
 
         Set<String> classNames = new HashSet<>();
-        JarFile jarFile = getCurrentRunningJarFile();
+        JarFile jarFile = getCurrentRunningJarFile(null);
         if(jarFile != null) {
             Enumeration<JarEntry> e = jarFile.entries();
             while (e.hasMoreElements()) {
@@ -246,9 +245,7 @@ public final class ReflectionUtils {
                     String className = jarEntry.getName()
                             .replace("/", ".")
                             .replace(".class", "");
-                    if (className.toLowerCase().startsWith(packageName.toLowerCase())) {
                         classNames.add(className);
-                    }
                 }
             }
 
@@ -264,7 +261,7 @@ public final class ReflectionUtils {
         return result;
     }
 
-    private static JarFile getCurrentRunningJarFile() {
+    private static JarFile getCurrentRunningJarFile(String jarFileName) {
         JarFile jarFile = null;
 
         try {
@@ -285,6 +282,11 @@ public final class ReflectionUtils {
         if(jarFile == null) {
             try {
                 jarFile = new JarFile("app.jar");
+            } catch (Exception ignored) {}
+        }
+        if(jarFile == null && jarFileName != null) {
+            try {
+                jarFile = new JarFile(jarFileName);
             } catch (Exception ignored) {}
         }
         return jarFile;
