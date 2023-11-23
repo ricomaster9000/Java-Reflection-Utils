@@ -254,7 +254,7 @@ public final class ReflectionUtils {
                     Class<?> classToAdd = getClassByName(className);
                     classToAdd = classToAdd == null ? Class.forName(className) : classToAdd;
                     result.add(classToAdd);
-                } catch (Exception ignored) {
+                } catch (Exception | LinkageError ignored) {
                 }
             }
         }
@@ -558,7 +558,7 @@ public final class ReflectionUtils {
         try {
             try {
                 result = Thread.currentThread().getContextClassLoader().loadClass(fullName);
-            } catch (ClassNotFoundException ignore) {}
+            } catch (Exception ignore) {}
             if(result == null) {
                 method = Thread.currentThread().getContextClassLoader().getClass().getDeclaredMethod("findClass", String.class, String.class);
                 if (!method.canAccess(Thread.currentThread().getContextClassLoader())) {
