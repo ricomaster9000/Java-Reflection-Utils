@@ -238,25 +238,28 @@ public final class ReflectionUtils {
 
         Set<String> classNames = new HashSet<>();
         JarFile jarFile = getCurrentRunningJarFile();
-        Enumeration<JarEntry> e = jarFile.entries();
-        while (e.hasMoreElements()) {
-            JarEntry jarEntry = e.nextElement();
-            if (jarEntry.getName().endsWith(".class")) {
-                String className = jarEntry.getName()
-                        .replace("/", ".")
-                        .replace(".class", "");
-                if(className.toLowerCase().startsWith(packageName.toLowerCase())) {
-                    classNames.add(className);
+        if(jarFile != null) {
+            Enumeration<JarEntry> e = jarFile.entries();
+            while (e.hasMoreElements()) {
+                JarEntry jarEntry = e.nextElement();
+                if (jarEntry.getName().endsWith(".class")) {
+                    String className = jarEntry.getName()
+                            .replace("/", ".")
+                            .replace(".class", "");
+                    if (className.toLowerCase().startsWith(packageName.toLowerCase())) {
+                        classNames.add(className);
+                    }
                 }
             }
-        }
 
-        for (String className : classNames) {
-            try {
-                Class<?> classToAdd = getClassByName(className);
-                classToAdd = classToAdd == null ? Class.forName(className) : classToAdd;
-                result.add(classToAdd);
-            } catch(ClassNotFoundException ignored) {}
+            for (String className : classNames) {
+                try {
+                    Class<?> classToAdd = getClassByName(className);
+                    classToAdd = classToAdd == null ? Class.forName(className) : classToAdd;
+                    result.add(classToAdd);
+                } catch (ClassNotFoundException ignored) {
+                }
+            }
         }
         return result;
     }
