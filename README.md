@@ -3,7 +3,7 @@ A small library for wrapping some reflection logic
 
 see https://github.com/ricomaster9000/Java-Reflection-Utils/blob/main/src/main/java/org/greatgamesonly/opensource/utils/reflectionutils/ReflectionUtils.java for all the methods one can use
 
-add as dependency by using jitpack.io, go to this link: https://jitpack.io/#ricomaster9000/Java-Reflection-Utils/1.0.82
+add as dependency by using jitpack.io, go to this link: https://jitpack.io/#ricomaster9000/Java-Reflection-Utils/1.0.83
 
 ### methods available:
 
@@ -30,6 +30,8 @@ add as dependency by using jitpack.io, go to this link: https://jitpack.io/#rico
     bypassWithTheseAnnotations, boolean includeLists)
 
     public static Set<String> getGetters(Class<?> clazz) throws IntrospectionException
+
+    public static Set<Method> getGetterMethods(Class<?> clazz) throws IntrospectionException
 
     public static Set<String> getGettersForBaseValueTypes(Class<?> clazz, boolean includeEnums, boolean includeLists) throws 
     IntrospectionException

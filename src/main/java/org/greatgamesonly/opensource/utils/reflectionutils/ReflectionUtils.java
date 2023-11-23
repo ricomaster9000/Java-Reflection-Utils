@@ -140,6 +140,13 @@ public final class ReflectionUtils {
                 .collect(Collectors.toSet());
     }
 
+    public static Set<Method> getGetterMethods(Class<?> clazz) throws IntrospectionException {
+        return Arrays.stream(Introspector.getBeanInfo(clazz).getPropertyDescriptors())
+                .filter(propertyDescriptor -> propertyDescriptor.getReadMethod() != null)
+                .map(PropertyDescriptor::getReadMethod)
+                .collect(Collectors.toSet());
+    }
+
     public static Set<String> getGettersForBaseValueTypes(Class<?> clazz, boolean includeEnums, boolean includeLists) throws IntrospectionException {
         return getGetters(clazz, BASE_VALUE_TYPES, true, includeEnums, includeLists);
     }
