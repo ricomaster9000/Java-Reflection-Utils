@@ -11,9 +11,14 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
 public final class ReflectionUtils {
@@ -201,7 +206,7 @@ public final class ReflectionUtils {
     public static List<Class<?>> getClasses(String packageName)
             throws ClassNotFoundException, IOException {
 
-        List<Class<?>> classesFoundUsingSystemClassLoader = findAllClassesUsingSystemClassLoader(packageName);
+        List<Class<?>> classesFoundUsingSystemClassLoader = findAllClassesUsingRunningJarFile(packageName);
 
         if(classesFoundUsingSystemClassLoader.size() <= 0) {
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
@@ -228,14 +233,92 @@ public final class ReflectionUtils {
         }
     }
 
-    public static List<Class<?>> findAllClassesUsingSystemClassLoader(String packageName) {
-        InputStream stream = ClassLoader.getSystemClassLoader()
-                .getResourceAsStream(packageName.replaceAll("[.]", "/"));
-        BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
-        return reader.lines()
-                .filter(line -> line.endsWith(".class"))
-                .map(line -> getClass(line, packageName))
-                .collect(Collectors.toList());
+    public static List<Class<?>> findAllClassesUsingRunningJarFile(String packageName) {
+        List<Class<?>> result = new ArrayList<>();
+
+        Set<String> classNames = new HashSet<>();
+        JarFile jarFile = getCurrentRunningJarFile();
+        Enumeration<JarEntry> e = jarFile.entries();
+        while (e.hasMoreElements()) {
+            JarEntry jarEntry = e.nextElement();
+            if (jarEntry.getName().endsWith(".class")) {
+                String className = jarEntry.getName()
+                        .replace("/", ".")
+                        .replace(".class", "");
+                if(className.toLowerCase().startsWith(packageName.toLowerCase())) {
+                    classNames.add(className);
+                }
+            }
+        }
+
+        for (String className : classNames) {
+            try {
+                Class<?> classToAdd = getClassByName(className);
+                classToAdd = classToAdd == null ? Class.forName(className) : classToAdd;
+                result.add(classToAdd);
+            } catch(ClassNotFoundException ignored) {}
+        }
+        return result;
+    }
+
+    private static JarFile getCurrentRunningJarFile() {
+        JarFile jarFile = null;
+
+        try {
+            jarFile = new JarFile(getRunningJarPath(getCallerClassName()).toFile());
+        } catch(Exception ignored) {}
+
+        if(jarFile == null && getContextClassLoader().getClass().getProtectionDomain() != null && getContextClassLoader().getClass().getProtectionDomain().getCodeSource() != null)
+        {
+            try {
+                jarFile = new JarFile(getContextClassLoader().getClass().getProtectionDomain().getCodeSource().getLocation().getPath());
+            } catch (Exception ignored) {}
+        }
+        if(jarFile == null) {
+            try {
+                jarFile = new JarFile("application.jar");
+            } catch (Exception ignored) {}
+        }
+        if(jarFile == null) {
+            try {
+                jarFile = new JarFile("app.jar");
+            } catch (Exception ignored) {}
+        }
+        return jarFile;
+    }
+
+    private static String getCallerClassName() {
+        StackTraceElement[] stElements = Thread.currentThread().getStackTrace();
+        String callerClassName = null;
+        for (int i=1; i<stElements.length; i++) {
+            StackTraceElement ste = stElements[i];
+            if (!ste.getClassName().equals(ReflectionUtils.class.getName())&& ste.getClassName().indexOf("java.lang.Thread")!=0) {
+                if (callerClassName==null) {
+                    callerClassName = ste.getClassName();
+                } else if (!callerClassName.equals(ste.getClassName())) {
+                    return ste.getClassName();
+                }
+            }
+        }
+        return null;
+    }
+
+    private static ClassLoader getContextClassLoader() {
+        return Thread.currentThread().getContextClassLoader();
+    }
+
+    private static Path getRunningJarPath(String callerClassName) {
+        Path result = null;
+        try {
+            result = Paths.get(Thread.currentThread()
+                    .getContextClassLoader()
+                    .loadClass(callerClassName)
+                    .getProtectionDomain()
+                    .getCodeSource()
+                    .getLocation()
+                    .toURI());
+        } catch(ClassNotFoundException | URISyntaxException ignored) {}
+        return result;
     }
 
     private static Class<?> getClass(String className, String packageName) {
