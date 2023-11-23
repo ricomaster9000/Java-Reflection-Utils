@@ -254,7 +254,7 @@ public final class ReflectionUtils {
                     Class<?> classToAdd = getClassByName(className);
                     classToAdd = classToAdd == null ? Class.forName(className) : classToAdd;
                     result.add(classToAdd);
-                } catch (ClassNotFoundException ignored) {
+                } catch (Exception ignored) {
                 }
             }
         }
