@@ -3,8 +3,7 @@ package org.greatgamesonly.opensource.utils.reflectionutils;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
@@ -201,25 +200,52 @@ public final class ReflectionUtils {
      */
     public static List<Class<?>> getClasses(String packageName)
             throws ClassNotFoundException, IOException {
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        assert classLoader != null;
-        String path = packageName.replace('.', '/');
-        Enumeration<URL> resources = classLoader.getResources(path);
-        List<File> dirs = new ArrayList<File>();
-        while (resources.hasMoreElements()) {
-            URL resource = resources.nextElement();
-            dirs.add(new File(resource.getFile()));
-        }
-        ArrayList<Class<?>> classes = new ArrayList<>();
-        for (File directory : dirs) {
-            List<Class<?>> innerClasses = findClasses(directory, packageName);
-            for (Class<?> clazz : innerClasses) {
-                Class<?> classToAdd = getClassByName(clazz.getName());
-                classToAdd = classToAdd == null ? Class.forName(clazz.getName()) : classToAdd;
-                classes.add(classToAdd);
+
+        List<Class<?>> classesFoundUsingSystemClassLoader = findAllClassesUsingSystemClassLoader(packageName);
+
+        if(classesFoundUsingSystemClassLoader.size() <= 0) {
+            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+            assert classLoader != null;
+            String path = packageName.replace('.', '/');
+            Enumeration<URL> resources = classLoader.getResources(path);
+            List<File> dirs = new ArrayList<File>();
+            while (resources.hasMoreElements()) {
+                URL resource = resources.nextElement();
+                dirs.add(new File(resource.getFile()));
             }
+            ArrayList<Class<?>> classes = new ArrayList<>();
+            for (File directory : dirs) {
+                List<Class<?>> innerClasses = findClasses(directory, packageName);
+                for (Class<?> clazz : innerClasses) {
+                    Class<?> classToAdd = getClassByName(clazz.getName());
+                    classToAdd = classToAdd == null ? Class.forName(clazz.getName()) : classToAdd;
+                    classes.add(classToAdd);
+                }
+            }
+            return classes;
+        } else {
+            return classesFoundUsingSystemClassLoader;
         }
-        return classes;
+    }
+
+    public static List<Class<?>> findAllClassesUsingSystemClassLoader(String packageName) {
+        InputStream stream = ClassLoader.getSystemClassLoader()
+                .getResourceAsStream(packageName.replaceAll("[.]", "/"));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+        return reader.lines()
+                .filter(line -> line.endsWith(".class"))
+                .map(line -> getClass(line, packageName))
+                .collect(Collectors.toList());
+    }
+
+    private static Class<?> getClass(String className, String packageName) {
+        try {
+            return Class.forName(packageName + "."
+                    + className.substring(0, className.lastIndexOf('.')));
+        } catch (ClassNotFoundException e) {
+            // handle the exception
+        }
+        return null;
     }
 
     /**
