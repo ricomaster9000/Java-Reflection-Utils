@@ -129,7 +129,7 @@ public final class ReflectionUtils {
                 try {
                     Method fieldGetterMethod = fieldValue != null ?
                             object.getClass().getMethod("set" + capitalize(fieldName), fieldValue.getClass()) :
-                            object.getClass().getMethod("set" + capitalize(fieldName));
+                            object.getClass().getMethod("set" + capitalize(fieldName), object.getClass().getMethod("get" + capitalize(fieldName)).getReturnType());
                     try {
                         if (!fieldGetterMethod.canAccess(object)) {
                             hadToSetMethodToAccessible = true;
