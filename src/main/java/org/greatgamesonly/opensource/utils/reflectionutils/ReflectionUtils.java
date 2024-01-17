@@ -127,20 +127,20 @@ public final class ReflectionUtils {
                 fieldsCached.put(fieldCacheKey, field);
             } catch (NoSuchFieldException e) {
                 try {
-                    Method fieldGetterMethod = fieldValue != null ?
+                    Method fieldSetterMethod = fieldValue != null ?
                             object.getClass().getMethod("set" + capitalize(fieldName), fieldValue.getClass()) :
                             object.getClass().getMethod("set" + capitalize(fieldName), object.getClass().getMethod("get" + capitalize(fieldName)).getReturnType());
                     try {
-                        if (!fieldGetterMethod.canAccess(object)) {
+                        if (!fieldSetterMethod.canAccess(object)) {
                             hadToSetMethodToAccessible = true;
-                            fieldGetterMethod.setAccessible(true);
-                            fieldGetterMethod.invoke(object, fieldValue);
+                            fieldSetterMethod.setAccessible(true);
+                            fieldSetterMethod.invoke(object, fieldValue);
                         } else {
-                            fieldGetterMethod.invoke(object, fieldValue);
+                            fieldSetterMethod.invoke(object, fieldValue);
                         }
                     } finally {
                         if (hadToSetMethodToAccessible) {
-                            fieldGetterMethod.setAccessible(false);
+                            fieldSetterMethod.setAccessible(false);
                         }
                     }
                 } catch (NoSuchMethodException | InvocationTargetException innerException) {
