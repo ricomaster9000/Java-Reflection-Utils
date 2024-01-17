@@ -64,16 +64,44 @@ public final class ReflectionUtils {
 
     public static <T> T getFieldValue(String field, Object instance) throws NoSuchFieldException, IllegalAccessException {
         T result = null;
-        Field fieldReflection = instance.getClass().getDeclaredField(field);
-        if(!fieldReflection.canAccess(instance)) {
-            fieldReflection.setAccessible(true);
+        Field fieldReflection = null;
+        boolean hadToSetMethodToAccessible = false;
+        boolean hadToSetFieldToAccessible = false;
+        try {
+            fieldReflection = instance.getClass().getDeclaredField(field);
+        } catch(NoSuchFieldException e) {
             try {
+                Method fieldGetterMethod = instance.getClass().getDeclaredMethod("get" + capitalize(field));
+                try {
+                    if (!fieldGetterMethod.canAccess(instance)) {
+                        hadToSetMethodToAccessible = true;
+                        fieldGetterMethod.setAccessible(true);
+                        result = (T) fieldGetterMethod.invoke(instance);
+                    } else {
+                        result = (T) fieldReflection.get(instance);
+                    }
+                    return result;
+                } finally {
+                    if(hadToSetMethodToAccessible) {
+                        fieldGetterMethod.setAccessible(false);
+                    }
+                }
+            } catch(NoSuchMethodException | InvocationTargetException innerException) {
+                throw e;
+            }
+        }
+        try {
+            if(!fieldReflection.canAccess(instance)) {
+                fieldReflection.setAccessible(true);
+                hadToSetFieldToAccessible = true;
                 result = (T) fieldReflection.get(instance);
-            } finally {
+            } else {
+                result = (T) fieldReflection.get(instance);
+            }
+        } finally {
+            if(hadToSetFieldToAccessible) {
                 fieldReflection.setAccessible(false);
             }
-        } else {
-            result = (T) fieldReflection.get(instance);
         }
         return result;
     }
@@ -92,18 +120,41 @@ public final class ReflectionUtils {
         String fieldCacheKey = String.format(SET_FIELD_QUICK_CACHE_KEY_LOOKUP_UNFORMATTED,object.getClass(),fieldName);
         Field field = fieldsCached.get(fieldCacheKey);
         boolean hadToSetMethodToAccessible = false;
+        boolean hadToSetFieldToAccessible = false;
         if(field == null) {
-            field = object.getClass().getDeclaredField(fieldName);
-            fieldsCached.put(fieldCacheKey, field);
+            try {
+                field = object.getClass().getDeclaredField(fieldName);
+                fieldsCached.put(fieldCacheKey, field);
+            } catch (NoSuchFieldException e) {
+                try {
+                    Method fieldGetterMethod = object.getClass().getDeclaredMethod("set" + capitalize(fieldName));
+                    try {
+                        if (!fieldGetterMethod.canAccess(object)) {
+                            hadToSetMethodToAccessible = true;
+                            fieldGetterMethod.setAccessible(true);
+                            fieldGetterMethod.invoke(object);
+                        } else {
+                            fieldGetterMethod.invoke(object);
+                        }
+                    } finally {
+                        if (hadToSetMethodToAccessible) {
+                            fieldGetterMethod.setAccessible(false);
+                        }
+                    }
+                } catch (NoSuchMethodException | InvocationTargetException innerException) {
+                    throw e;
+                }
+            }
         }
+
         try {
             if(!field.canAccess(object)) {
                 field.setAccessible(true);
-                hadToSetMethodToAccessible = true;
+                hadToSetFieldToAccessible = true;
             }
             field.set(object, fieldValue);
         } finally {
-            if(hadToSetMethodToAccessible) {
+            if(hadToSetFieldToAccessible) {
                 field.setAccessible(false);
             }
         }
