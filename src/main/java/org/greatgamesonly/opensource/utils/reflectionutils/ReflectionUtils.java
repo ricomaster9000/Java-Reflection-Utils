@@ -71,7 +71,7 @@ public final class ReflectionUtils {
             fieldReflection = instance.getClass().getDeclaredField(field);
         } catch(NoSuchFieldException e) {
             try {
-                Method fieldGetterMethod = instance.getClass().getDeclaredMethod("get" + capitalize(field));
+                Method fieldGetterMethod = instance.getClass().getMethod("get" + capitalize(field));
                 try {
                     if (!fieldGetterMethod.canAccess(instance)) {
                         hadToSetMethodToAccessible = true;
@@ -127,7 +127,7 @@ public final class ReflectionUtils {
                 fieldsCached.put(fieldCacheKey, field);
             } catch (NoSuchFieldException e) {
                 try {
-                    Method fieldGetterMethod = object.getClass().getDeclaredMethod("set" + capitalize(fieldName));
+                    Method fieldGetterMethod = object.getClass().getMethod("set" + capitalize(fieldName));
                     try {
                         if (!fieldGetterMethod.canAccess(object)) {
                             hadToSetMethodToAccessible = true;
