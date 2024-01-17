@@ -83,6 +83,21 @@ public class MainTest {
     }
 
     @Test()
+    public void testGetFieldValue() throws NoSuchFieldException, IllegalAccessException {
+        System.out.println("TESTS - Get field via reflection twice, the second time is to test that caching does not cause issues");
+
+        String expectedNewFieldValue1 = "nameybaydray155555";
+        String expectedNewFieldValue2 = "nameybaydray2555555";
+        TestModelClass test1 = new TestModelClass();
+
+        test1.setName(expectedNewFieldValue1);
+        Assert.assertEquals("getFieldValue - field returned must be correct value - first try", ReflectionUtils.getFieldValue("name",test1), expectedNewFieldValue1);
+
+        test1.setName(expectedNewFieldValue2);
+        Assert.assertEquals("getFieldValue - field returned must be correct value - second try", ReflectionUtils.getFieldValue("name",test1), expectedNewFieldValue2);
+    }
+
+    @Test()
     public void testGetClassesInPackage() throws IOException, ClassNotFoundException {
         System.out.println("TESTS - test get classes from package name");
 
