@@ -78,7 +78,7 @@ public final class ReflectionUtils {
                         fieldGetterMethod.setAccessible(true);
                         result = (T) fieldGetterMethod.invoke(instance);
                     } else {
-                        result = (T) fieldReflection.get(instance);
+                        result = (T) fieldGetterMethod.invoke(instance);
                     }
                     return result;
                 } finally {
