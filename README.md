@@ -96,10 +96,6 @@ add as dependency by using jitpack.io, go to this link: https://jitpack.io/#rico
 
     public static <T> T mergeNonBaseObjectIntoNonBaseObject(Object objectFrom, T objectTo) throws Exception
 
-    public static <T> T shallowMergeNonBaseObjectIntoNonBaseObject(Object objectFrom, T objectTo) throws Exception
-
-    public static <T> T shallowMergeNonBaseObjectIntoNonBaseObjectQuick(Object objectFrom, T objectTo) throws Exception
-
     public static <T> List<ReflectionSimilarClassToClassMethod> getAllSimilarClassToClassMethodToMethodWrappers(
       Object objectFrom,
       TobjectTo
