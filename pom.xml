@@ -6,7 +6,7 @@
 	<groupId>org.greatgamesonly.opensource.utils</groupId>
 	<artifactId>reflectionutils</artifactId>
 	<url>https://github.com/ricomaster9000/Java-Reflection-Utils</url>
-	<version>1.0.93</version>
+	<version>1.0.94</version>
 	<dependencies>
 		<dependency>
 			<groupId>commons-beanutils</groupId>
