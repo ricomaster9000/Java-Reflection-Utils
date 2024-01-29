@@ -7,6 +7,13 @@
 	<artifactId>reflectionutils</artifactId>
 	<url>https://github.com/ricomaster9000/Java-Reflection-Utils</url>
 	<version>1.0.93</version>
+	<dependencies>
+		<dependency>
+			<groupId>commons-beanutils</groupId>
+			<artifactId>commons-beanutils</artifactId>
+			<version>1.9.4</version>
+		</dependency>
+	</dependencies>
 	<properties>
 		<compiler-plugin.version>3.8.1</compiler-plugin.version>
 		<maven.compiler.parameters>true</maven.compiler.parameters>

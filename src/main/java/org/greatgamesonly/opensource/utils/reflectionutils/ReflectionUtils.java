@@ -1,5 +1,7 @@
 package org.greatgamesonly.opensource.utils.reflectionutils;
 
+import org.apache.commons.beanutils.BeanUtilsBean;
+
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
@@ -638,6 +640,83 @@ public final class ReflectionUtils {
     }
 
     public static <T> T mergeNonBaseObjectIntoNonBaseObject(Object objectFrom, T objectTo) throws Exception {
+        RecursiveBeanUtils recursiveBeanUtils = new RecursiveBeanUtils();
+        recursiveBeanUtils.copyProperties(objectTo, objectFrom);
+        System.gc();
+        return objectTo;
+    }
+
+    protected static class RecursiveBeanUtils extends BeanUtilsBean {
+        // to keep from any chance infinite recursion lets limit each object to 1 instance at a time in the stack
+        public List<Object> lookingAt = new ArrayList<>();
+
+        /**
+         * Override to ensure that we dont end up in infinite recursion
+         * @param dest
+         * @param orig
+         * @throws IllegalAccessException
+         * @throws InvocationTargetException
+         */
+        @Override
+        public void copyProperties(Object dest, Object orig) throws IllegalAccessException, InvocationTargetException {
+            try {
+                // if we have an object in our list, that means we hit some sort of recursion, stop here.
+                if(lookingAt.stream().anyMatch(o->o == dest)) {
+                    return; // recursion detected
+                }
+                lookingAt.add(dest);
+                super.copyProperties(dest, orig);
+            } finally {
+                lookingAt.remove(dest);
+            }
+        }
+
+        @Override
+        public void copyProperty(Object dest, String name, Object value)
+                throws IllegalAccessException, InvocationTargetException {
+            boolean isCollection = value instanceof Collection<?>;
+            boolean isMap = value instanceof Map<?,?>;
+            boolean isEnum = value instanceof Enum<?>;
+
+            // dont copy over null or empty values
+            if (value != null && (!isCollection || !((Collection<?>) value).isEmpty()) && (!isMap || !((Map<?,?>) value).isEmpty())) {
+                // attempt to check if the value is a pojo we can clone using nested calls
+                if(isMap) {
+                    try {
+                        Object prop = super.getPropertyUtils().getProperty(dest, name);
+                        ((Map<Object, Object>) prop).putAll(((Map<Object, Object>) value));
+                    } catch (NoSuchMethodException e) {
+                        return;
+                    }
+                } else if(isEnum) {
+                    try {
+                        setFieldValue(dest, name, value);
+                    } catch (java.lang.NoSuchFieldException e) {
+                        throw new InvocationTargetException(e);
+                    }
+                } else if(!value.getClass().isPrimitive() && !value.getClass().isSynthetic() && !checkIfClassIsFromMainJavaPackages(value.getClass())) {
+                    try {
+                        Object prop = super.getPropertyUtils().getProperty(dest, name);
+                        // get current value, if its null then clone the value and set that to the value
+                        if (prop == null) {
+                            super.setProperty(dest, name, super.cloneBean(value));
+                        } else {
+                            // get the destination value and then recursively call
+                            copyProperties(prop, value);
+                        }
+                    } catch (NoSuchMethodException e) {
+                        return;
+                    } catch (InstantiationException e) {
+                        throw new RuntimeException("Nested property could not be cloned.", e);
+                    }
+                } else {
+                    super.copyProperty(dest, name, value);
+                }
+            }
+        }
+    }
+
+    /*public static <T> T mergeNonBaseObjectIntoNonBaseObject(Object objectFrom, T objectTo) throws Exception {
         List<ReflectionSimilarClassToClassMethod> reflectionSimilarClassToClassMethods = getAllSimilarClassToClassMethodToMethodWrappers(objectFrom, objectTo);
         for(ReflectionSimilarClassToClassMethod reflectionSimilarClassToClassMethod : reflectionSimilarClassToClassMethods) {
             Object getterValue = callReflectionMethod(objectFrom,reflectionSimilarClassToClassMethod.getMethodObjectFromGetter());
@@ -733,7 +812,7 @@ public final class ReflectionUtils {
             similarClassToClassMethodGroupingByClassToClassNames.put(key,reflectionSimilarClassToClassMethods);
         }
         return reflectionSimilarClassToClassMethods;
-    }
+    }*/
 
     public static Class<?> findValueTypeForNonEmptyList(List<?> list) {
         if(list != null && !list.isEmpty() && !list.stream().allMatch(Objects::nonNull)) {
