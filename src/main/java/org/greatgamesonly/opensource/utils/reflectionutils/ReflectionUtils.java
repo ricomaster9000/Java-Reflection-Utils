@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
@@ -42,14 +43,40 @@ public final class ReflectionUtils {
             Calendar.class,
             java.sql.Date.class,
             java.util.Date.class,
-            byte[].class // its sort of primitive just wrapped in a array and the usual base way of working with bytes for every object
+            byte[].class, // its sort of primitive just wrapped in a array and the usual base way of working with bytes for every object
+            char.class,
+            byte.class,
+            int.class,
+            short.class,
+            long.class,
+            boolean.class,
+            double.class,
+            float.class
     );
 
-    private static final HashMap<String, List<ReflectionSimilarClassToClassMethod>> similarClassToClassMethodGroupingByClassToClassNames = new HashMap<>();
-    private static final HashMap<String, Method> methodsCached = new HashMap<>();
-    private static final HashMap<String, Field> fieldsCached = new HashMap<>();
+    private static final ConcurrentHashMap<String, List<ReflectionSimilarClassToClassMethod>> similarClassToClassMethodGroupingByClassToClassNames = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Method> methodsCached = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Field> fieldsCached = new ConcurrentHashMap<>();
     private static final String CALL_METHOD_QUICK_CACHE_KEY_LOOKUP_UNFORMATTED = "cc%s_%s__%s";
     private static final String SET_FIELD_QUICK_CACHE_KEY_LOOKUP_UNFORMATTED = "ff%s_%s__";
+
+
+    private static final Timer cacheCleanerLowProfileTimer;
+    static {
+        Timer timer = new Timer();
+        timer.schedule(
+                new TimerTask() {
+                    @Override
+                    public void run() {
+                        methodsCached.clear();
+                        fieldsCached.clear();
+                        similarClassToClassMethodGroupingByClassToClassNames.clear();
+                    }
+                },
+                300000L, 300000L
+        );
+        cacheCleanerLowProfileTimer = timer;
+    }
 
     public static boolean fieldExists(String field, Class<?> clazz) {
         return Arrays.stream(getClassFields(clazz, false,null)).
@@ -639,10 +666,56 @@ public final class ReflectionUtils {
         return result;
     }
 
+    public static <T> T cleanObject(T objectToClean) throws NoSuchFieldException, IllegalAccessException {
+        if(objectToClean != null) {
+            List<Field> fields = List.of(getClassFields(objectToClean.getClass()));
+            for(Field field : fields) {
+                if(field.getType().isPrimitive()) {
+                    if (isNumericField(field)) {
+                        setFieldValue(objectToClean, field.getName(), 0);
+                    } else if (field.getType().equals(boolean.class)) {
+                        setFieldValue(objectToClean, field.getName(), false);
+                    } else if (field.getType().equals(char.class)) {
+                        setFieldValue(objectToClean, field.getName(), '\u0000');
+                    }
+                } else {
+                    setFieldToNull(objectToClean, field.getName());
+                }
+            }
+        }
+        return objectToClean;
+    }
+
+    public static boolean isNumericField(Field field) {
+        return field != null &&
+                (field.getType().equals(Short.class) ||
+                        field.getType().equals(Integer.class) ||
+                        field.getType().equals(Long.class) ||
+                        field.getType().equals(Float.class) ||
+                        field.getType().equals(Double.class) ||
+                        field.getType().equals(BigInteger.class) ||
+                        field.getType().equals(BigDecimal.class) ||
+                        field.getType().equals(short.class) ||
+                        field.getType().equals(int.class) ||
+                        field.getType().equals(long.class) ||
+                        field.getType().equals(float.class) ||
+                        field.getType().equals(double.class)
+                );
+    }
+
+    public static <T> T mergeNonBaseObjectIntoSimilarNonBaseObject(Object objectFrom, T objectTo) throws Exception {
+        if(objectTo.getClass().isAssignableFrom(objectFrom.getClass())) {
+            RecursiveBeanUtils recursiveBeanUtils = new RecursiveBeanUtils();
+            recursiveBeanUtils.copyProperties(objectTo, objectFrom);
+        } else {
+            throw new Exception("objectTo cannot be assigned to objectFrom");
+        }
+        return objectTo;
+    }
+
     public static <T> T mergeNonBaseObjectIntoNonBaseObject(Object objectFrom, T objectTo) throws Exception {
         RecursiveBeanUtils recursiveBeanUtils = new RecursiveBeanUtils();
         recursiveBeanUtils.copyProperties(objectTo, objectFrom);
-        System.gc();
         return objectTo;
     }
 
