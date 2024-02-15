@@ -37,6 +37,24 @@ public class MainTest {
     }
 
     @Test()
+    public void testMergeObjectsOverrideMappedFields() throws Exception {
+        System.out.println("TESTS - Override field that is already set in similar object via mergeNonBaseObjectIntoNonBaseObject method");
+        String nameOverrideValue = "testNamesdfsdfsdfsdfsdf";
+        String descriptionOverrideValue = "sdasad_DESCRIPTION";
+
+        TestModelClass test1 = new TestModelClass();
+        test1.setName("testName");
+        test1.setDescription(null);
+        TestModelClass test1DuplicateToMergeIn = new TestModelClass();
+        test1DuplicateToMergeIn.setName(nameOverrideValue);
+        test1DuplicateToMergeIn.setDescription(descriptionOverrideValue);
+        ReflectionUtils.mergeNonBaseObjectIntoNonBaseObject(test1DuplicateToMergeIn,test1);
+
+        Assert.assertEquals("OverrideField name - name of object merged into must be equals to name of merged in object", test1.getName(),nameOverrideValue);
+        Assert.assertEquals("OverrideField name - description of object merged into must be equals to description of merged in object", test1.getDescription(),descriptionOverrideValue);
+    }
+
+    @Test()
     public void testSetFieldValue() throws NoSuchFieldException, IllegalAccessException {
         System.out.println("TESTS - Set field to a value via reflection twice, the second time is to test that caching does not cause issues");
 
