@@ -1,6 +1,8 @@
 package org.greatgamesonly.opensource.utils.reflectionutils;
 
-import org.apache.commons.beanutils.BeanUtilsBean;
+import org.apache.commons.beanutils.*;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -722,6 +724,7 @@ public final class ReflectionUtils {
     protected static class RecursiveBeanUtils extends BeanUtilsBean {
         // to keep from any chance infinite recursion lets limit each object to 1 instance at a time in the stack
         public List<Object> lookingAt = new ArrayList<>();
+        private CustomPropertyUtilsBean propertyUtilsBean = new CustomPropertyUtilsBean();
 
         /**
          * Override to ensure that we dont end up in infinite recursion
@@ -784,6 +787,136 @@ public final class ReflectionUtils {
                     }
                 } else {
                     super.copyProperty(dest, name, value);
+                }
+            }
+        }
+
+        @Override
+        public CustomPropertyUtilsBean getPropertyUtils() {
+            return this.propertyUtilsBean;
+        }
+    }
+
+    public static class CustomPropertyUtilsBean extends PropertyUtilsBean {
+        private final Log log = LogFactory.getLog(PropertyUtils.class);
+
+        @Override
+        public void setSimpleProperty(Object bean, String name, Object value) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+            if (bean == null) {
+                throw new IllegalArgumentException("No bean specified");
+            } else if (name == null) {
+                throw new IllegalArgumentException("No name specified for bean class '" + bean.getClass() + "'");
+            } else if (this.getResolver().hasNested(name)) {
+                throw new IllegalArgumentException("Nested property names are not allowed: Property '" + name + "' on bean class '" + bean.getClass() + "'");
+            //} else if (this.getResolver().isIndexed(name)) {
+                //throw new IllegalArgumentException("Indexed property names are not allowed: Property '" + name + "' on bean class '" + bean.getClass() + "'");
+            //} else if (this.getResolver().isMapped(name)) {
+                //throw new IllegalArgumentException("Mapped property names are not allowed: Property '" + name + "' on bean class '" + bean.getClass() + "'");
+            } else if (bean instanceof DynaBean) {
+                DynaProperty descriptor = ((DynaBean)bean).getDynaClass().getDynaProperty(name);
+                if (descriptor == null) {
+                    throw new NoSuchMethodException("Unknown property '" + name + "' on dynaclass '" + ((DynaBean)bean).getDynaClass() + "'");
+                } else {
+                    ((DynaBean)bean).set(name, value);
+                }
+            } else {
+                PropertyDescriptor descriptor = this.getPropertyDescriptor(bean, name);
+                if (descriptor == null) {
+                    throw new NoSuchMethodException("Unknown property '" + name + "' on class '" + bean.getClass() + "'");
+                } else {
+                    Method writeMethod = this.getWriteMethod(bean.getClass(), descriptor);
+                    if (writeMethod == null) {
+                        throw new NoSuchMethodException("Property '" + name + "' has no setter method in class '" + bean.getClass() + "'");
+                    } else {
+                        Object[] values = new Object[]{value};
+                        if (this.log.isTraceEnabled()) {
+                            String valueClassName = value == null ? "<null>" : value.getClass().getName();
+                            this.log.trace("setSimpleProperty: Invoking method " + writeMethod + " with value " + value + " (class " + valueClassName + ")");
+                        }
+                        this.invokeMethod(writeMethod, bean, values);
+                    }
+                }
+            }
+        }
+
+        private Object invokeMethod(Method method, Object bean, Object[] values) throws IllegalAccessException, InvocationTargetException {
+            if (bean == null) {
+                throw new IllegalArgumentException("No bean specified - this should have been checked before reaching this method");
+            } else {
+                String valueString;
+                Class[] parTypes;
+                String expectedString;
+                IllegalArgumentException e;
+                try {
+                    return method.invoke(bean, values);
+                } catch (NullPointerException var9) {
+                    valueString = "";
+                    if (values != null) {
+                        for(int i = 0; i < values.length; ++i) {
+                            if (i > 0) {
+                                valueString = valueString + ", ";
+                            }
+
+                            if (values[i] == null) {
+                                valueString = valueString + "<null>";
+                            } else {
+                                valueString = valueString + values[i].getClass().getName();
+                            }
+                        }
+                    }
+
+                    expectedString = "";
+                    parTypes = method.getParameterTypes();
+                    if (parTypes != null) {
+                        for(int i = 0; i < parTypes.length; ++i) {
+                            if (i > 0) {
+                                expectedString = expectedString + ", ";
+                            }
+
+                            expectedString = expectedString + parTypes[i].getName();
+                        }
+                    }
+
+                    e = new IllegalArgumentException("Cannot invoke " + method.getDeclaringClass().getName() + "." + method.getName() + " on bean class '" + bean.getClass() + "' - " + var9.getMessage() + " - had objects of type \"" + valueString + "\" but expected signature \"" + expectedString + "\"");
+                    if (!BeanUtils.initCause(e, var9)) {
+                        this.log.error("Method invocation failed", var9);
+                    }
+
+                    throw e;
+                } catch (IllegalArgumentException var10) {
+                    valueString = "";
+                    if (values != null) {
+                        for(int i = 0; i < values.length; ++i) {
+                            if (i > 0) {
+                                valueString = valueString + ", ";
+                            }
+
+                            if (values[i] == null) {
+                                valueString = valueString + "<null>";
+                            } else {
+                                valueString = valueString + values[i].getClass().getName();
+                            }
+                        }
+                    }
+
+                    expectedString = "";
+                    parTypes = method.getParameterTypes();
+                    if (parTypes != null) {
+                        for(int i = 0; i < parTypes.length; ++i) {
+                            if (i > 0) {
+                                expectedString = expectedString + ", ";
+                            }
+
+                            expectedString = expectedString + parTypes[i].getName();
+                        }
+                    }
+
+                    e = new IllegalArgumentException("Cannot invoke " + method.getDeclaringClass().getName() + "." + method.getName() + " on bean class '" + bean.getClass() + "' - " + var10.getMessage() + " - had objects of type \"" + valueString + "\" but expected signature \"" + expectedString + "\"");
+                    if (!BeanUtils.initCause(e, var10)) {
+                        this.log.error("Method invocation failed", var10);
+                    }
+
+                    throw e;
                 }
             }
         }
