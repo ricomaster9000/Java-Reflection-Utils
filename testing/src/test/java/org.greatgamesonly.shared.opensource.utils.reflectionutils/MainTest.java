@@ -41,6 +41,8 @@ public class MainTest {
         System.out.println("TESTS - Override field that is already set in similar object via mergeNonBaseObjectIntoNonBaseObject method");
         String nameOverrideValue = "testNamesdfsdfsdfsdfsdf";
         String descriptionOverrideValue = "sdasad_DESCRIPTION";
+        TestSubObjectClass subOverride = new TestSubObjectClass();
+        subOverride.setSubName("hello");
 
         TestModelClass test1 = new TestModelClass();
         test1.setName("testName");
@@ -48,10 +50,12 @@ public class MainTest {
         TestModelClass test1DuplicateToMergeIn = new TestModelClass();
         test1DuplicateToMergeIn.setName(nameOverrideValue);
         test1DuplicateToMergeIn.setDescription(descriptionOverrideValue);
-        ReflectionUtils.mergeNonBaseObjectIntoNonBaseObject(test1DuplicateToMergeIn,test1);
+        test1DuplicateToMergeIn.setSub(subOverride);
 
+        ReflectionUtils.mergeNonBaseObjectIntoNonBaseObject(test1DuplicateToMergeIn,test1);
         Assert.assertEquals("OverrideField name - name of object merged into must be equals to name of merged in object", test1.getName(),nameOverrideValue);
         Assert.assertEquals("OverrideField name - description of object merged into must be equals to description of merged in object", test1.getDescription(),descriptionOverrideValue);
+        Assert.assertTrue("OverrideField name - sub of object merged into must be equals to sub of merged in object", test1.getSub() != null && test1.getSub().getSubName().equals("hello"));
     }
 
     @Test()

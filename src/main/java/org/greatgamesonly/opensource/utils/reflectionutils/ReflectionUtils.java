@@ -726,6 +726,8 @@ public final class ReflectionUtils {
         public List<Object> lookingAt = new ArrayList<>();
         private CustomPropertyUtilsBean propertyUtilsBean = new CustomPropertyUtilsBean();
 
+        private boolean copyOverEmptyValues;
+
         /**
          * Override to ensure that we dont end up in infinite recursion
          * @param dest
@@ -735,7 +737,12 @@ public final class ReflectionUtils {
          */
         @Override
         public void copyProperties(Object dest, Object orig) throws IllegalAccessException, InvocationTargetException {
+            copyProperties(dest,orig,true);
+        }
+
+        public void copyProperties(Object dest, Object orig, boolean copyOverEmptyValues) throws IllegalAccessException, InvocationTargetException {
             try {
+                this.copyOverEmptyValues = copyOverEmptyValues;
                 // if we have an object in our list, that means we hit some sort of recursion, stop here.
                 if(lookingAt.stream().anyMatch(o->o == dest)) {
                     return; // recursion detected
@@ -753,9 +760,17 @@ public final class ReflectionUtils {
             boolean isCollection = value instanceof Collection<?>;
             boolean isMap = value instanceof Map<?,?>;
             boolean isEnum = value instanceof Enum<?>;
+            boolean isEmptyValue = false;
+            if(isCollection) {
+                isEmptyValue = ((Collection<?>) value).isEmpty();
+            }
 
-            // dont copy over null or empty values
-            if (value != null && (!isCollection || !((Collection<?>) value).isEmpty()) && (!isMap || !((Map<?,?>) value).isEmpty())) {
+            if(isMap) {
+                isEmptyValue = ((Map<?,?>) value).isEmpty();
+            }
+
+            // don't copy over null or empty values unless specified to
+            if (value != null && (!isEmptyValue || this.copyOverEmptyValues)) {
                 // attempt to check if the value is a pojo we can clone using nested calls
                 if(isMap) {
                     try {
