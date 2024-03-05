@@ -98,7 +98,11 @@ add as dependency by using jitpack.io, go to this link: https://jitpack.io/#rico
 
     public static <T> T mergeNonBaseObjectIntoNonBaseObject(Object objectFrom, T objectTo) throws Exception
 
+    public static <T> T mergeNonBaseObjectIntoNonBaseObject(Object objectFrom, T objectTo, boolean copyOverEmptyValues) throws Exception
+
     public static <T> T mergeNonBaseObjectIntoSimilarNonBaseObject(Object objectFrom, T objectTo) throws Exception
+
+    public static <T> T mergeNonBaseObjectIntoSimilarNonBaseObject(Object objectFrom, T objectTo, boolean copyOverEmptyValues) throws Exception
 
     public static Class<?> findValueTypeForNonEmptyList(List<?> list)
 

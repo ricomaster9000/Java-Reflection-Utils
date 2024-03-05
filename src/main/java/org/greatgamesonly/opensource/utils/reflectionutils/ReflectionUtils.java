@@ -706,9 +706,13 @@ public final class ReflectionUtils {
     }
 
     public static <T> T mergeNonBaseObjectIntoSimilarNonBaseObject(Object objectFrom, T objectTo) throws Exception {
+        return mergeNonBaseObjectIntoSimilarNonBaseObject(objectFrom, objectTo, true);
+    }
+
+    public static <T> T mergeNonBaseObjectIntoSimilarNonBaseObject(Object objectFrom, T objectTo, boolean copyOverEmptyValues) throws Exception {
         if(objectTo.getClass().isAssignableFrom(objectFrom.getClass())) {
             RecursiveBeanUtils recursiveBeanUtils = new RecursiveBeanUtils();
-            recursiveBeanUtils.copyProperties(objectTo, objectFrom);
+            recursiveBeanUtils.copyProperties(objectTo, objectFrom, copyOverEmptyValues);
         } else {
             throw new Exception("objectTo cannot be assigned to objectFrom");
         }
@@ -716,8 +720,12 @@ public final class ReflectionUtils {
     }
 
     public static <T> T mergeNonBaseObjectIntoNonBaseObject(Object objectFrom, T objectTo) throws Exception {
+        return mergeNonBaseObjectIntoNonBaseObject(objectFrom,objectTo,true);
+    }
+
+    public static <T> T mergeNonBaseObjectIntoNonBaseObject(Object objectFrom, T objectTo, boolean copyOverEmptyValues) throws Exception {
         RecursiveBeanUtils recursiveBeanUtils = new RecursiveBeanUtils();
-        recursiveBeanUtils.copyProperties(objectTo, objectFrom);
+        recursiveBeanUtils.copyProperties(objectTo, objectFrom, copyOverEmptyValues);
         return objectTo;
     }
 
