@@ -6,13 +6,15 @@
 	<groupId>org.greatgamesonly.opensource.utils</groupId>
 	<artifactId>reflectionutils</artifactId>
 	<url>https://github.com/ricomaster9000/Java-Reflection-Utils</url>
-	<version>1.1.12</version>
+	<version>1.1.13</version>
 	<dependencies>
 		<dependency>
 			<groupId>commons-beanutils</groupId>
 			<artifactId>commons-beanutils</artifactId>
 			<version>1.9.4</version>
 		</dependency>
+		<!--Cx78f40514-81ff 7.5 Uncontrolled Recursion vulnerability with High severity found
+			HANDLED by how dependency is used, it has its own recursion check to prevent infinite recursion-->
 	</dependencies>
 	<properties>
 		<compiler-plugin.version>3.8.1</compiler-plugin.version>

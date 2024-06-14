@@ -80,6 +80,10 @@ public final class ReflectionUtils {
         cacheCleanerLowProfileTimer = timer;
     }
 
+    public static boolean fieldExists(Class<?> clazz, String field) {
+        return fieldExists(field,clazz);
+    }
+
     public static boolean fieldExists(String field, Class<?> clazz) {
         return Arrays.stream(getClassFields(clazz, false,null)).
                 anyMatch(clazzField -> clazzField.getName().equals(field));
@@ -147,39 +151,32 @@ public final class ReflectionUtils {
         } catch (NoSuchFieldException | IllegalAccessException ignored) {}
     }
 
-    public static void setFieldValue(Object object, String fieldName, Object fieldValue) throws IllegalAccessException, NoSuchFieldException {
-        String fieldCacheKey = String.format(SET_FIELD_QUICK_CACHE_KEY_LOOKUP_UNFORMATTED,object.getClass(),fieldName);
-        Field field = fieldsCached.get(fieldCacheKey);
+    public static void setFieldValueViaSetter(Object object, String fieldName, Object fieldValue) throws IllegalAccessException, NoSuchMethodException {
         boolean hadToSetMethodToAccessible = false;
-        boolean hadToSetFieldToAccessible = false;
-        if(field == null) {
+        try {
+            Method fieldSetterMethod = fieldValue != null ?
+                    object.getClass().getMethod("set" + capitalize(fieldName), fieldValue.getClass()) :
+                    object.getClass().getMethod("set" + capitalize(fieldName), object.getClass().getMethod("get" + capitalize(fieldName)).getReturnType());
             try {
-                field = object.getClass().getDeclaredField(fieldName);
-                fieldsCached.put(fieldCacheKey, field);
-            } catch (NoSuchFieldException e) {
-                try {
-                    Method fieldSetterMethod = fieldValue != null ?
-                            object.getClass().getMethod("set" + capitalize(fieldName), fieldValue.getClass()) :
-                            object.getClass().getMethod("set" + capitalize(fieldName), object.getClass().getMethod("get" + capitalize(fieldName)).getReturnType());
-                    try {
-                        if (!fieldSetterMethod.canAccess(object)) {
-                            hadToSetMethodToAccessible = true;
-                            fieldSetterMethod.setAccessible(true);
-                            fieldSetterMethod.invoke(object, fieldValue);
-                        } else {
-                            fieldSetterMethod.invoke(object, fieldValue);
-                        }
-                    } finally {
-                        if (hadToSetMethodToAccessible) {
-                            fieldSetterMethod.setAccessible(false);
-                        }
-                    }
-                } catch (NoSuchMethodException | InvocationTargetException innerException) {
-                    throw e;
+                if (!fieldSetterMethod.canAccess(object)) {
+                    hadToSetMethodToAccessible = true;
+                    fieldSetterMethod.setAccessible(true);
+                    fieldSetterMethod.invoke(object, fieldValue);
+                } else {
+                    fieldSetterMethod.invoke(object, fieldValue);
+                }
+            } finally {
+                if (hadToSetMethodToAccessible) {
+                    fieldSetterMethod.setAccessible(false);
                 }
             }
+        } catch (NoSuchMethodException | InvocationTargetException e) {
+            throw new NoSuchMethodException(e.getMessage());
         }
+    }
 
+    public static void setFieldViaDirectAccess(Object object, Field field, Object fieldValue) throws IllegalAccessException, NoSuchFieldException {
+        boolean hadToSetFieldToAccessible = false;
         try {
             if(!field.canAccess(object)) {
                 field.setAccessible(true);
@@ -191,6 +188,46 @@ public final class ReflectionUtils {
                 field.setAccessible(false);
             }
         }
+    }
+
+    public static void setFieldValueAsynchronously(Object object, String fieldName, Object fieldValue) throws IllegalAccessException, NoSuchFieldException {
+        setFieldValueAsynchronouslyInternal(object,fieldName,fieldValue,0);
+    }
+
+    private static void setFieldValueAsynchronouslyInternal(Object object, String fieldName, Object fieldValue, int totalTimesRetried) throws IllegalAccessException, NoSuchFieldException {
+        String fieldCacheKey = String.format(SET_FIELD_QUICK_CACHE_KEY_LOOKUP_UNFORMATTED,object.getClass(),fieldName);
+        Field field = fieldsCached.get(fieldCacheKey);
+        if(field == null) {
+            field = object.getClass().getDeclaredField(fieldName);
+            fieldsCached.put(fieldCacheKey, field);
+        }
+        try {
+            setFieldValueViaSetter(object,fieldName,fieldValue);
+        } catch (NoSuchMethodException e) {
+            if(totalTimesRetried >= 5) {
+                setFieldViaDirectAccess(object, field, fieldValue);
+            } else {
+                setFieldValueAsynchronouslyInternal(object,fieldName,fieldValue,++totalTimesRetried);
+            }
+        }
+    }
+
+    public static void setFieldValue(Object object, String fieldName, Object fieldValue) throws IllegalAccessException, NoSuchFieldException {
+        String fieldCacheKey = String.format(SET_FIELD_QUICK_CACHE_KEY_LOOKUP_UNFORMATTED,object.getClass(),fieldName);
+        Field field = fieldsCached.get(fieldCacheKey);
+        if(field == null) {
+            try {
+                field = object.getClass().getDeclaredField(fieldName);
+                fieldsCached.put(fieldCacheKey, field);
+            } catch (NoSuchFieldException e) {
+                try {
+                    setFieldValueViaSetter(object,fieldName,fieldValue);
+                } catch (NoSuchMethodException ex) {
+                    throw new NoSuchFieldException(ex.getMessage());
+                }
+            }
+        }
+        setFieldViaDirectAccess(object, field, fieldValue);
     }
 
     public static Field[] getClassFields(Class<?> clazz) {
@@ -703,6 +740,17 @@ public final class ReflectionUtils {
                         field.getType().equals(float.class) ||
                         field.getType().equals(double.class)
                 );
+    }
+
+    public List<Object> getObjectFieldValues(Object object) throws NoSuchFieldException, IllegalAccessException {
+        List<Object> result = new ArrayList<>();
+
+        Field[] fields = getClassFields(object.getClass());
+        for (Field field : fields) {
+            result.add(object.getClass().getDeclaredField(field.getName()).get(object));
+        }
+
+        return result;
     }
 
     public static <T> T mergeNonBaseObjectIntoSimilarNonBaseObject(Object objectFrom, T objectTo) throws Exception {
