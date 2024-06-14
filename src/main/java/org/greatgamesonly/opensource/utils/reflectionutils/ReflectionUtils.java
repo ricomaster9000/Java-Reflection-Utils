@@ -61,6 +61,7 @@ public final class ReflectionUtils {
     private static final ConcurrentHashMap<String, Field> fieldsCached = new ConcurrentHashMap<>();
     private static final String CALL_METHOD_QUICK_CACHE_KEY_LOOKUP_UNFORMATTED = "cc%s_%s__%s";
     private static final String SET_FIELD_QUICK_CACHE_KEY_LOOKUP_UNFORMATTED = "ff%s_%s__";
+    private static final String SET_METHOD_QUICK_CACHE_KEY_LOOKUP_UNFORMATTED = "mm%s_%s__";
 
 
     private static final Timer cacheCleanerLowProfileTimer;
@@ -152,30 +153,43 @@ public final class ReflectionUtils {
     }
 
     public static void setFieldValueViaSetter(Object object, String fieldName, Object fieldValue) throws IllegalAccessException, NoSuchMethodException {
+        String methodCacheKey = String.format(SET_METHOD_QUICK_CACHE_KEY_LOOKUP_UNFORMATTED, object.getClass(), fieldName);
+        Method method = methodsCached.get(methodCacheKey);
+        try {
+            if (method == null) {
+                Class<?> fieldType = fieldValue != null ? fieldValue.getClass() : getFieldType(object, fieldName);
+                method = object.getClass().getMethod("set" + capitalize(fieldName), fieldType);
+                methodsCached.put(methodCacheKey, method);
+            }
+        } catch (NoSuchMethodException e) {
+            throw new NoSuchMethodException("Setter method not found for field: " + fieldName);
+        }
+
         boolean hadToSetMethodToAccessible = false;
         try {
-            Method fieldSetterMethod = fieldValue != null ?
-                    object.getClass().getMethod("set" + capitalize(fieldName), fieldValue.getClass()) :
-                    object.getClass().getMethod("set" + capitalize(fieldName), object.getClass().getMethod("get" + capitalize(fieldName)).getReturnType());
-            try {
-                if (!fieldSetterMethod.canAccess(object)) {
-                    hadToSetMethodToAccessible = true;
-                    fieldSetterMethod.setAccessible(true);
-                    fieldSetterMethod.invoke(object, fieldValue);
-                } else {
-                    fieldSetterMethod.invoke(object, fieldValue);
-                }
-            } finally {
-                if (hadToSetMethodToAccessible) {
-                    fieldSetterMethod.setAccessible(false);
-                }
+            if (!method.canAccess(object)) {
+                hadToSetMethodToAccessible = true;
+                method.setAccessible(true);
             }
-        } catch (NoSuchMethodException | InvocationTargetException e) {
-            throw new NoSuchMethodException(e.getMessage());
+            method.invoke(object, fieldValue);
+        } catch (InvocationTargetException e) {
+            throw new IllegalAccessException(e.getCause().getMessage());
+        } finally {
+            if (hadToSetMethodToAccessible) {
+                method.setAccessible(false);
+            }
         }
     }
 
-    public static void setFieldViaDirectAccess(Object object, Field field, Object fieldValue) throws IllegalAccessException, NoSuchFieldException {
+    private static Class<?> getFieldType(Object object, String fieldName) throws NoSuchMethodException {
+        try {
+            return object.getClass().getMethod("get" + capitalize(fieldName)).getReturnType();
+        } catch (NoSuchMethodException e) {
+            throw new NoSuchMethodException("Getter method not found for field: " + fieldName);
+        }
+    }
+
+    public static void setFieldViaDirectAccess(Object object, Field field, Object fieldValue) throws IllegalAccessException {
         boolean hadToSetFieldToAccessible = false;
         try {
             if(!field.canAccess(object)) {
