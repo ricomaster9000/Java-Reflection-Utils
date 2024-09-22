@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 
 public final class ReflectionUtils {
 
-    public static final List<Class<?>> BASE_VALUE_TYPES = List.of(
+    public static final List<Class<?>> BASE_VALUE_TYPES = Arrays.asList(new Class<?>[]{
             String.class,
             Character.class,
             Byte.class,
@@ -44,7 +44,7 @@ public final class ReflectionUtils {
             Timestamp.class,
             Calendar.class,
             java.sql.Date.class,
-            java.util.Date.class,
+            Date.class,
             byte[].class, // its sort of primitive just wrapped in a array and the usual base way of working with bytes for every object
             char.class,
             byte.class,
@@ -54,7 +54,7 @@ public final class ReflectionUtils {
             boolean.class,
             double.class,
             float.class
-    );
+    });
 
     private static final ConcurrentHashMap<String, List<ReflectionSimilarClassToClassMethod>> similarClassToClassMethodGroupingByClassToClassNames = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, Method> methodsCached = new ConcurrentHashMap<>();
@@ -109,7 +109,7 @@ public final class ReflectionUtils {
             try {
                 Method fieldGetterMethod = instance.getClass().getMethod("get" + capitalize(field));
                 try {
-                    if (!fieldGetterMethod.canAccess(instance)) {
+                    if (!fieldGetterMethod.isAccessible()) {
                         hadToSetMethodToAccessible = true;
                         fieldGetterMethod.setAccessible(true);
                         result = (T) fieldGetterMethod.invoke(instance);
@@ -127,7 +127,7 @@ public final class ReflectionUtils {
             }
         }
         try {
-            if(!fieldReflection.canAccess(instance)) {
+            if(!fieldReflection.isAccessible()) {
                 fieldReflection.setAccessible(true);
                 hadToSetFieldToAccessible = true;
                 result = (T) fieldReflection.get(instance);
@@ -167,7 +167,7 @@ public final class ReflectionUtils {
 
         boolean hadToSetMethodToAccessible = false;
         try {
-            if (!method.canAccess(object)) {
+            if (!method.isAccessible()) {
                 hadToSetMethodToAccessible = true;
                 method.setAccessible(true);
             }
@@ -192,7 +192,7 @@ public final class ReflectionUtils {
     public static void setFieldViaDirectAccess(Object object, Field field, Object fieldValue) throws IllegalAccessException {
         boolean hadToSetFieldToAccessible = false;
         try {
-            if(!field.canAccess(object)) {
+            if(!field.isAccessible()) {
                 field.setAccessible(true);
                 hadToSetFieldToAccessible = true;
             }
@@ -567,7 +567,7 @@ public final class ReflectionUtils {
         boolean setParams = methodParams != null && methodParams.length != 0;
         Method method = setParams ? object.getClass().getMethod(methodName, methodParamTypes) : object.getClass().getMethod(methodName);
         boolean hadToSetMethodToAccessible = false;
-        if(!method.canAccess(object)) {
+        if(!method.isAccessible()) {
             method.setAccessible(true);
             hadToSetMethodToAccessible = true;
         }
@@ -644,7 +644,7 @@ public final class ReflectionUtils {
         Object methodResult;
         boolean setParams = method.getParameterTypes().length > 0 && methodParams != null;
         boolean hadToSetMethodToAccessible = false;
-        if(!method.canAccess(object)) {
+        if(!method.isAccessible()) {
             method.setAccessible(true);
             hadToSetMethodToAccessible = true;
         }
@@ -675,7 +675,7 @@ public final class ReflectionUtils {
         boolean setParams = methodParams != null && methodParams.length != 0;
         Method method = setParams ? object.getClass().getMethod(methodName, methodParamTypes) : object.getClass().getMethod(methodName);
         boolean hadToSetMethodToAccessible = false;
-        if(!method.canAccess(object)) {
+        if(!method.isAccessible()) {
             method.setAccessible(true);
             hadToSetMethodToAccessible = true;
         }
@@ -703,11 +703,11 @@ public final class ReflectionUtils {
             } catch (Exception ignore) {}
             if(result == null) {
                 method = Thread.currentThread().getContextClassLoader().getClass().getDeclaredMethod("findClass", String.class, String.class);
-                if (!method.canAccess(Thread.currentThread().getContextClassLoader())) {
+                if (!method.isAccessible()) {
                     method.setAccessible(true);
                     methodHadToBeSetToAccessible = true;
                 }
-                result = (Class<?>) method.invoke(Thread.currentThread().getContextClassLoader(), Thread.currentThread().getContextClassLoader().getUnnamedModule().getName(), fullName);
+                result = (Class<?>) method.invoke(Thread.currentThread().getContextClassLoader(), fullName);
             }
         } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             return null;
@@ -721,7 +721,7 @@ public final class ReflectionUtils {
 
     public static <T> T cleanObject(T objectToClean) throws NoSuchFieldException, IllegalAccessException {
         if(objectToClean != null) {
-            List<Field> fields = List.of(getClassFields(objectToClean.getClass()));
+            List<Field> fields = Arrays.asList(getClassFields(objectToClean.getClass()));
             for(Field field : fields) {
                 if(field.getType().isPrimitive()) {
                     if (isNumericField(field)) {
