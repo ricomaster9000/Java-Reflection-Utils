@@ -243,25 +243,30 @@ public final class ReflectionUtils {
     }
 
     public static Field[] getClassFields(Class<?> clazz) {
-        return getClassFields(clazz, false, new ArrayList<>());
+        return getClassFields(clazz, false, new ArrayList<>(), true, true);
     }
 
     public static Field[] getClassFields(Class<?> clazz, boolean excludeDeclaredCustomClassFields) {
-        return getClassFields(clazz, excludeDeclaredCustomClassFields, new ArrayList<>());
+        return getClassFields(clazz, excludeDeclaredCustomClassFields, new ArrayList<>(), true, true);
     }
 
     public static Field[] getClassFields(Class<?> clazz, boolean excludeDeclaredCustomClassFields, List<Class<? extends Annotation>> bypassWithTheseAnnotations) {
-        return getClassFields(clazz, excludeDeclaredCustomClassFields, bypassWithTheseAnnotations, true);
+        return getClassFields(clazz, excludeDeclaredCustomClassFields, bypassWithTheseAnnotations, true, true);
     }
 
     public static Field[] getClassFields(Class<?> clazz, boolean excludeDeclaredCustomClassFields, List<Class<? extends Annotation>> bypassWithTheseAnnotations, boolean includeLists) {
+        return getClassFields(clazz, excludeDeclaredCustomClassFields, bypassWithTheseAnnotations, includeLists, true);
+    }
+
+    public static Field[] getClassFields(Class<?> clazz, boolean excludeDeclaredCustomClassFields, List<Class<? extends Annotation>> bypassWithTheseAnnotations, boolean includeLists, boolean includeMaps) {
         return Arrays.stream(clazz.getDeclaredFields())
                 .filter(field -> (
                         ((!excludeDeclaredCustomClassFields && !checkIfClassIsFromMainJavaPackages(field.getType())) ||
                         BASE_VALUE_TYPES.contains(field.getType()) ||
                         field.getType().isPrimitive() ||
                         field.getType().isEnum() ||
-                        (includeLists && Collection.class.isAssignableFrom(field.getType()))) &&
+                        (includeLists && Collection.class.isAssignableFrom(field.getType())) ||
+                        (includeMaps && Map.class.isAssignableFrom(field.getType()))) &&
                         Arrays.stream(field.getAnnotations()).noneMatch(annotation -> bypassWithTheseAnnotations != null && bypassWithTheseAnnotations.contains(annotation.annotationType()))
                 )).toArray(Field[]::new);
     }
