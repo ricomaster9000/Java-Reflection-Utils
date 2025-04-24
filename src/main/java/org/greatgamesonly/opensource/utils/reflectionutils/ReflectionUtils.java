@@ -268,7 +268,7 @@ public final class ReflectionUtils {
 
     public static Field[] getClassFieldsOfType(Class<?> clazz, Class<?> classType) {
         return Arrays.stream(getClassFields(clazz))
-                .filter(field -> field.getType().isAssignableFrom(classType))
+                .filter(field -> classType.isAssignableFrom(field.getType()))
                 .toArray(Field[]::new);
     }
 
@@ -283,7 +283,7 @@ public final class ReflectionUtils {
     public static <T> List<T> getObjectFieldValuesOfType(Object object, Class<T> type) throws NoSuchFieldException, IllegalAccessException {
         List<T> result = new ArrayList<>();
         Field[] fields = Arrays.stream(getClassFields(object.getClass()))
-                .filter(field -> field.getType().isAssignableFrom(type))
+                .filter(field -> type.isAssignableFrom(field.getType()))
                 .toArray(Field[]::new);
         for(Field field : fields) {
             result.add(getFieldValue(field.getName(),object));
