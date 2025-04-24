@@ -1,6 +1,7 @@
 package org.greatgamesonly.shared.opensource.utils.reflectionutils;
 
 
+import com.sun.jdi.connect.Transport;
 import org.greatgamesonly.opensource.utils.reflectionutils.ReflectionUtils;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -9,6 +10,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.List;
 
 public class MainTest {
@@ -135,6 +137,48 @@ public class MainTest {
         List<Object> constantObjects = ReflectionUtils.getAllConstantValuesInClass(TestModelClass.class);
 
         Assert.assertTrue("TestModelClass class must be returned in retrieved classes", constantObjects.stream().anyMatch(constant -> constant.equals("test_constant_value")));
+    }
+
+    @Test()
+    public void testGetClassFieldsOfType_positiveMatch() {
+        System.out.println("TESTS - test getClassFieldsOfType - positive match");
+        Field[] stringFields = ReflectionUtils.getClassFieldsOfType(TestModelClass.class, String.class);
+        Assert.assertTrue("There must be at least one String field", stringFields.length > 0 && Arrays.stream(stringFields).anyMatch(field -> field.getName().equals("name")));
+    }
+
+    @Test()
+    public void testGetClassFieldsOfType_negativeMatch() {
+        System.out.println("TESTS - test getClassFieldsOfType - negative match");
+        Field[] integerFields = ReflectionUtils.getClassFieldsOfType(TestModelClass.class, Transport.class);
+        Assert.assertTrue("There should be no Transport fields", integerFields.length == 0);
+    }
+
+    @Test()
+    public void testGetObjectFieldValuesOfType_positiveMatch() throws NoSuchFieldException, IllegalAccessException {
+        System.out.println("TESTS - test getObjectFieldValuesOfType - positive match");
+
+        TestModelClass testModel = new TestModelClass();
+        testModel.setName("testName");
+        testModel.setDescription("testDescription");
+
+        List<String> stringFieldValues = ReflectionUtils.getObjectFieldValuesOfType(testModel, String.class);
+
+        Assert.assertTrue("There must be at least two string values returned", stringFieldValues.size() >= 2);
+        Assert.assertTrue("Returned values must include testName", stringFieldValues.contains("testName"));
+        Assert.assertTrue("Returned values must include testDescription", stringFieldValues.contains("testDescription"));
+    }
+
+    @Test()
+    public void testGetObjectFieldValuesOfType_negativeMatch() throws NoSuchFieldException, IllegalAccessException {
+        System.out.println("TESTS - test getObjectFieldValuesOfType - negative match");
+
+        TestModelClass testModel = new TestModelClass();
+        testModel.setName("testName");
+        testModel.setDescription("testDescription");
+
+        List<Integer> integerFieldValues = ReflectionUtils.getObjectFieldValuesOfType(testModel, Integer.class);
+
+        Assert.assertTrue("There should be no Integer field values", integerFieldValues.isEmpty());
     }
 
     @AfterClass

@@ -3,7 +3,7 @@ A small library for wrapping some reflection logic
 
 see https://github.com/ricomaster9000/Java-Reflection-Utils/blob/main/src/main/java/org/greatgamesonly/opensource/utils/reflectionutils/ReflectionUtils.java for all the methods one can use
 
-add as dependency by using jitpack.io, go to this link: https://jitpack.io/#ricomaster9000/Java-Reflection-Utils/1.1.15
+add as dependency by using jitpack.io, go to this link: https://jitpack.io/#ricomaster9000/Java-Reflection-Utils/1.1.17
 
 ### methods available:
 
@@ -107,4 +107,10 @@ add as dependency by using jitpack.io, go to this link: https://jitpack.io/#rico
     public static Class<?> findValueTypeForNonEmptyList(List<?> list)
 
     public static <T> Class<?> findValueTypeForNonEmptyArray(T[] list)
+
+    public static Field[] getClassFieldsOfType(Class<?> clazz, Class<?> classType)
+
+    public static <T> List<T> getObjectFieldValuesOfTypeNoException(Object object, Class<T> type)
+
+    public static <T> List<T> getObjectFieldValuesOfType(Object object, Class<T> type)
 

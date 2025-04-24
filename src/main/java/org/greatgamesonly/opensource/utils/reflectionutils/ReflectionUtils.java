@@ -9,10 +9,7 @@ import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.io.*;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Array;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URISyntaxException;
@@ -103,8 +100,10 @@ public final class ReflectionUtils {
         Field fieldReflection = null;
         boolean hadToSetMethodToAccessible = false;
         boolean hadToSetFieldToAccessible = false;
+        boolean isStaticField;
         try {
             fieldReflection = instance.getClass().getDeclaredField(field);
+            isStaticField = Modifier.isStatic(fieldReflection.getModifiers());
         } catch(NoSuchFieldException e) {
             try {
                 Method fieldGetterMethod = instance.getClass().getMethod("get" + capitalize(field));
@@ -127,13 +126,12 @@ public final class ReflectionUtils {
             }
         }
         try {
-            if(!fieldReflection.canAccess(instance)) {
+            boolean canAccess = isStaticField ? fieldReflection.canAccess(null) : fieldReflection.canAccess(instance);
+            if(!canAccess) {
                 fieldReflection.setAccessible(true);
                 hadToSetFieldToAccessible = true;
-                result = (T) fieldReflection.get(instance);
-            } else {
-                result = (T) fieldReflection.get(instance);
             }
+            result = isStaticField ? (T) fieldReflection.get(null) : (T) fieldReflection.get(instance);
         } finally {
             if(hadToSetFieldToAccessible) {
                 fieldReflection.setAccessible(false);
@@ -266,6 +264,31 @@ public final class ReflectionUtils {
                         (includeLists && Collection.class.isAssignableFrom(field.getType()))) &&
                         Arrays.stream(field.getAnnotations()).noneMatch(annotation -> bypassWithTheseAnnotations != null && bypassWithTheseAnnotations.contains(annotation.annotationType()))
                 )).toArray(Field[]::new);
+    }
+
+    public static Field[] getClassFieldsOfType(Class<?> clazz, Class<?> classType) {
+        return Arrays.stream(getClassFields(clazz))
+                .filter(field -> field.getType().isAssignableFrom(classType))
+                .toArray(Field[]::new);
+    }
+
+    public static <T> List<T> getObjectFieldValuesOfTypeNoException(Object object, Class<T> type) {
+        List<T> result = new ArrayList<>();
+        try {
+            result = getObjectFieldValuesOfType(object, type);
+        } catch(NoSuchFieldException | IllegalAccessException ignore) {}
+        return result;
+    }
+
+    public static <T> List<T> getObjectFieldValuesOfType(Object object, Class<T> type) throws NoSuchFieldException, IllegalAccessException {
+        List<T> result = new ArrayList<>();
+        Field[] fields = Arrays.stream(getClassFields(object.getClass()))
+                .filter(field -> field.getType().isAssignableFrom(type))
+                .toArray(Field[]::new);
+        for(Field field : fields) {
+            result.add(getFieldValue(field.getName(),object));
+        }
+        return result;
     }
 
     public static Set<String> getGetters(Class<?> clazz) throws IntrospectionException {
