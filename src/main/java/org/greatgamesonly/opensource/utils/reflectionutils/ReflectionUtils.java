@@ -258,17 +258,17 @@ public final class ReflectionUtils {
         return Arrays.stream(clazz.getDeclaredFields())
                 .filter(field -> (
                         ((!excludeDeclaredCustomClassFields && !checkIfClassIsFromMainJavaPackages(field.getType())) ||
-                        BASE_VALUE_TYPES.contains(field.getType()) ||
-                        field.getType().isPrimitive() ||
-                        field.getType().isEnum() ||
-                        (includeLists && Collection.class.isAssignableFrom(field.getType()))) &&
-                        Arrays.stream(field.getAnnotations()).noneMatch(annotation -> bypassWithTheseAnnotations != null && bypassWithTheseAnnotations.contains(annotation.annotationType()))
+                                BASE_VALUE_TYPES.contains(field.getType()) ||
+                                field.getType().isPrimitive() ||
+                                field.getType().isEnum() ||
+                                (includeLists && Collection.class.isAssignableFrom(field.getType()))) &&
+                                Arrays.stream(field.getAnnotations()).noneMatch(annotation -> bypassWithTheseAnnotations != null && bypassWithTheseAnnotations.contains(annotation.annotationType()))
                 )).toArray(Field[]::new);
     }
 
     public static Field[] getClassFieldsOfType(Class<?> clazz, Class<?> classType) {
         return Arrays.stream(getClassFields(clazz))
-                .filter(field -> field.getType().isAssignableFrom(classType))
+                .filter(field -> classType.isAssignableFrom(field.getType()))
                 .toArray(Field[]::new);
     }
 
@@ -283,7 +283,7 @@ public final class ReflectionUtils {
     public static <T> List<T> getObjectFieldValuesOfType(Object object, Class<T> type) throws NoSuchFieldException, IllegalAccessException {
         List<T> result = new ArrayList<>();
         Field[] fields = Arrays.stream(getClassFields(object.getClass()))
-                .filter(field -> field.getType().isAssignableFrom(type))
+                .filter(field -> type.isAssignableFrom(field.getType()))
                 .toArray(Field[]::new);
         for(Field field : fields) {
             result.add(getFieldValue(field.getName(),object));
@@ -313,13 +313,13 @@ public final class ReflectionUtils {
         List<Class<?>> finalOnlyForTheseValueTypes = (onlyForTheseValueTypes == null) ? new ArrayList<>() : new ArrayList<>(onlyForTheseValueTypes);
         return Arrays.stream(Introspector.getBeanInfo(clazz).getPropertyDescriptors())
                 .filter(
-                    propertyDescriptor -> propertyDescriptor.getReadMethod() != null &&
-                    (
-                        finalOnlyForTheseValueTypes.contains(propertyDescriptor.getPropertyType()) ||
-                        (includePrimitives && propertyDescriptor.getPropertyType().isPrimitive()) ||
-                        (includeLists && Collection.class.isAssignableFrom(propertyDescriptor.getPropertyType())) ||
-                        (includeEnums && propertyDescriptor.getPropertyType().isEnum())
-                    )
+                        propertyDescriptor -> propertyDescriptor.getReadMethod() != null &&
+                                (
+                                        finalOnlyForTheseValueTypes.contains(propertyDescriptor.getPropertyType()) ||
+                                                (includePrimitives && propertyDescriptor.getPropertyType().isPrimitive()) ||
+                                                (includeLists && Collection.class.isAssignableFrom(propertyDescriptor.getPropertyType())) ||
+                                                (includeEnums && propertyDescriptor.getPropertyType().isEnum())
+                                )
                 )
                 .map(propertyDescriptor -> propertyDescriptor.getReadMethod().getName())
                 .collect(Collectors.toSet());
@@ -348,13 +348,13 @@ public final class ReflectionUtils {
         List<Class<?>> finalOnlyForTheseValueTypes = (onlyForTheseValueTypes == null) ? new ArrayList<>() : onlyForTheseValueTypes;
         return Arrays.stream(Introspector.getBeanInfo(clazz).getPropertyDescriptors())
                 .filter(
-                    propertyDescriptor -> propertyDescriptor.getWriteMethod() != null &&
-                    (
-                        finalOnlyForTheseValueTypes.contains(propertyDescriptor.getPropertyType()) ||
-                        (includePrimitives && propertyDescriptor.getPropertyType().isPrimitive()) ||
-                        (includeLists && Collection.class.isAssignableFrom(propertyDescriptor.getPropertyType())) ||
-                        (includeEnums && propertyDescriptor.getPropertyType().isEnum())
-                    )
+                        propertyDescriptor -> propertyDescriptor.getWriteMethod() != null &&
+                                (
+                                        finalOnlyForTheseValueTypes.contains(propertyDescriptor.getPropertyType()) ||
+                                                (includePrimitives && propertyDescriptor.getPropertyType().isPrimitive()) ||
+                                                (includeLists && Collection.class.isAssignableFrom(propertyDescriptor.getPropertyType())) ||
+                                                (includeEnums && propertyDescriptor.getPropertyType().isEnum())
+                                )
                 )
                 .map(propertyDescriptor -> propertyDescriptor.getWriteMethod().getName())
                 .collect(Collectors.toSet());
@@ -410,7 +410,7 @@ public final class ReflectionUtils {
                     String className = jarEntry.getName()
                             .replace("/", ".")
                             .replace(".class", "");
-                        classNames.add(className);
+                    classNames.add(className);
                 }
             }
 
@@ -916,9 +916,9 @@ public final class ReflectionUtils {
                 throw new IllegalArgumentException("No name specified for bean class '" + bean.getClass() + "'");
             } else if (this.getResolver().hasNested(name)) {
                 throw new IllegalArgumentException("Nested property names are not allowed: Property '" + name + "' on bean class '" + bean.getClass() + "'");
-            //} else if (this.getResolver().isIndexed(name)) {
+                //} else if (this.getResolver().isIndexed(name)) {
                 //throw new IllegalArgumentException("Indexed property names are not allowed: Property '" + name + "' on bean class '" + bean.getClass() + "'");
-            //} else if (this.getResolver().isMapped(name)) {
+                //} else if (this.getResolver().isMapped(name)) {
                 //throw new IllegalArgumentException("Mapped property names are not allowed: Property '" + name + "' on bean class '" + bean.getClass() + "'");
             } else if (bean instanceof DynaBean) {
                 DynaProperty descriptor = ((DynaBean)bean).getDynaClass().getDynaProperty(name);
